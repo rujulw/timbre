@@ -1,0 +1,50 @@
+package com.rujulw.timbre.controller;
+
+import com.rujulw.timbre.config.SpotifyProperties;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.servlet.view.RedirectView;
+
+@RestController
+@RequestMapping("/api/auth")
+public class AuthController {
+
+    private static final String RESPONSE_TYPE = "code";
+
+    private final SpotifyProperties spotifyProperties;
+
+    public AuthController(SpotifyProperties spotifyProperties) {
+        this.spotifyProperties = spotifyProperties;
+    }
+
+    @GetMapping("/login")
+    public RedirectView login() {
+        String scopes = String.join(" ", spotifyProperties.scopes());
+
+        String authorizationUri = ServletUriComponentsBuilder
+                .fromUriString(spotifyProperties.authorizeUrl())
+                .queryParam("response_type", RESPONSE_TYPE)
+                .queryParam("client_id", spotifyProperties.clientId())
+                .queryParam("scope", scopes)
+                .queryParam("redirect_uri", spotifyProperties.redirectUri())
+                .build()
+                .toUriString();
+
+        return new RedirectView(authorizationUri);
+    }
+
+    @GetMapping("/callback")
+    public ResponseEntity<Map<String, Object>> callback(@RequestParam String code) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("status", "received");
+        payload.put("code", code);
+        payload.put("message", "OAuth callback skeleton ready; token exchange lands in next commit.");
+        return ResponseEntity.ok(payload);
+    }
+}
