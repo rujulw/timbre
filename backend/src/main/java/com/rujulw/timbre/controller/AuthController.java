@@ -1,6 +1,9 @@
 package com.rujulw.timbre.controller;
 
 import com.rujulw.timbre.config.SpotifyProperties;
+import com.rujulw.timbre.dto.SpotifyTokenResponse;
+import com.rujulw.timbre.dto.SpotifyUserDTO;
+import com.rujulw.timbre.service.SpotifyAuthService;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.http.ResponseEntity;
@@ -18,9 +21,11 @@ public class AuthController {
     private static final String RESPONSE_TYPE = "code";
 
     private final SpotifyProperties spotifyProperties;
+    private final SpotifyAuthService spotifyAuthService;
 
-    public AuthController(SpotifyProperties spotifyProperties) {
+    public AuthController(SpotifyProperties spotifyProperties, SpotifyAuthService spotifyAuthService) {
         this.spotifyProperties = spotifyProperties;
+        this.spotifyAuthService = spotifyAuthService;
     }
 
     @GetMapping("/login")
@@ -41,10 +46,16 @@ public class AuthController {
 
     @GetMapping("/callback")
     public ResponseEntity<Map<String, Object>> callback(@RequestParam String code) {
+        SpotifyTokenResponse tokenResponse = spotifyAuthService.exchangeCodeForToken(code);
+        SpotifyUserDTO currentUser = spotifyAuthService.getCurrentUser(tokenResponse.getAccessToken());
+
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("status", "received");
-        payload.put("code", code);
-        payload.put("message", "OAuth callback skeleton ready; token exchange lands in next commit.");
+        payload.put("status", "token_exchanged");
+        payload.put("accessToken", tokenResponse.getAccessToken());
+        payload.put("refreshToken", tokenResponse.getRefreshToken());
+        payload.put("expiresIn", tokenResponse.getExpiresIn());
+        payload.put("user", currentUser);
+        payload.put("message", "Spotify profile fetched; user persistence lands in next commit.");
         return ResponseEntity.ok(payload);
     }
 }
