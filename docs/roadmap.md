@@ -10,15 +10,15 @@ Build timbre in a clean, showcaseable, industry-standard GitHub Flow, using the 
 ## Milestone 1 — Foundation
 - [x] Scaffold repo layout
 - [x] Define conventions and architecture baseline
-- [ ] Bootstrap backend Spring Boot skeleton
-- [ ] Bootstrap frontend React/Vite skeleton
-- [ ] Add baseline CI checks (build/lint/smoke)
+- [x] Bootstrap backend Spring Boot skeleton
+- [x] Bootstrap frontend React/Vite skeleton
+- [x] Add baseline CI checks (build/lint/smoke)
 
 ## Milestone 2 — Auth Foundation
-- [ ] Spotify configuration wiring
-- [ ] Auth login + callback skeleton
-- [ ] Spotify token/profile service
-- [ ] User persistence for token metadata
+- [x] Spotify configuration wiring
+- [x] Auth login + callback skeleton
+- [x] Spotify token/profile service
+- [x] User persistence for token metadata
 - [ ] Auth-focused test coverage
 
 ## Milestone 3 — Dashboard Data Flow

@@ -31,8 +31,8 @@ Target responsibilities:
 ### Backend (`backend`)
 Current responsibilities:
 - Spotify OAuth login/callback flow.
-- Spotify data retrieval and aggregation endpoints.
-- User token/profile sync to PostgreSQL.
+- Spotify token exchange + profile retrieval.
+- User identity/token metadata sync to PostgreSQL.
 - Safe translation of Spotify payloads to frontend-ready DTOs.
 
 Future responsibilities:
@@ -53,6 +53,13 @@ Future responsibilities:
 - `User` (persisted): spotify id, profile metadata, token metadata.
 - `Track` (domain model): normalized track representation for analytics features.
 - Spotify DTOs: API boundary objects only (not persistence entities).
+
+Current implemented backend layers:
+- `controller`: `AuthController` (`/api/auth/login`, `/api/auth/callback`)
+- `service`: `SpotifyAuthService`, `UserService`
+- `repository`: `UserRepository`
+- `model`: `User` (`app_users` table)
+- `dto`: `SpotifyTokenResponse`, `SpotifyUserDTO`
 
 ## Naming and Conventions
 - Branch naming: `feat-<branch-name>`.

@@ -3,7 +3,9 @@ package com.rujulw.timbre.controller;
 import com.rujulw.timbre.config.SpotifyProperties;
 import com.rujulw.timbre.dto.SpotifyTokenResponse;
 import com.rujulw.timbre.dto.SpotifyUserDTO;
+import com.rujulw.timbre.model.User;
 import com.rujulw.timbre.service.SpotifyAuthService;
+import com.rujulw.timbre.service.UserService;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.http.ResponseEntity;
@@ -22,10 +24,16 @@ public class AuthController {
 
     private final SpotifyProperties spotifyProperties;
     private final SpotifyAuthService spotifyAuthService;
+    private final UserService userService;
 
-    public AuthController(SpotifyProperties spotifyProperties, SpotifyAuthService spotifyAuthService) {
+    public AuthController(
+            SpotifyProperties spotifyProperties,
+            SpotifyAuthService spotifyAuthService,
+            UserService userService
+    ) {
         this.spotifyProperties = spotifyProperties;
         this.spotifyAuthService = spotifyAuthService;
+        this.userService = userService;
     }
 
     @GetMapping("/login")
@@ -48,14 +56,17 @@ public class AuthController {
     public ResponseEntity<Map<String, Object>> callback(@RequestParam String code) {
         SpotifyTokenResponse tokenResponse = spotifyAuthService.exchangeCodeForToken(code);
         SpotifyUserDTO currentUser = spotifyAuthService.getCurrentUser(tokenResponse.getAccessToken());
+        User persistedUser = userService.syncUser(currentUser, tokenResponse);
 
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("status", "token_exchanged");
+        payload.put("status", "user_synced");
+        payload.put("userId", persistedUser.getId());
+        payload.put("spotifyId", persistedUser.getSpotifyId());
         payload.put("accessToken", tokenResponse.getAccessToken());
         payload.put("refreshToken", tokenResponse.getRefreshToken());
         payload.put("expiresIn", tokenResponse.getExpiresIn());
         payload.put("user", currentUser);
-        payload.put("message", "Spotify profile fetched; user persistence lands in next commit.");
+        payload.put("message", "Spotify profile and token metadata persisted.");
         return ResponseEntity.ok(payload);
     }
 }
