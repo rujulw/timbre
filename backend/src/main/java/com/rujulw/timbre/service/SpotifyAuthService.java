@@ -3,6 +3,7 @@ package com.rujulw.timbre.service;
 import com.rujulw.timbre.config.SpotifyProperties;
 import com.rujulw.timbre.dto.SpotifyTokenResponse;
 import com.rujulw.timbre.dto.SpotifyUserDTO;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -16,9 +17,14 @@ public class SpotifyAuthService {
     private final SpotifyProperties spotifyProperties;
     private final RestClient restClient;
 
+    @Autowired
     public SpotifyAuthService(SpotifyProperties spotifyProperties) {
+        this(spotifyProperties, RestClient.create());
+    }
+
+    SpotifyAuthService(SpotifyProperties spotifyProperties, RestClient restClient) {
         this.spotifyProperties = spotifyProperties;
-        this.restClient = RestClient.create();
+        this.restClient = restClient;
     }
 
     public SpotifyTokenResponse exchangeCodeForToken(String code) {

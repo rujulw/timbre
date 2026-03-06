@@ -31,4 +31,6 @@ This design note covers commits 6-9:
 - Keep commit boundaries strict to the planned 25-commit flow.
 
 ## Follow-up
-- Commit 10 should add controller/service tests around callback happy path and sync behavior.
+- Commit 10 delivered:
+- `SpotifyAuthServiceTest` for token exchange and profile fetch happy-path requests/responses.
+- `AuthControllerTest` for login redirect URL composition and callback payload contract.

@@ -72,6 +72,9 @@ Current implemented backend layers:
 ## Known Gaps
 - Initial phase prioritizes rebuild velocity over full hardening.
 - E2E coverage is not baseline yet.
+- Auth happy-path coverage now includes:
+- Service tests for token exchange and profile fetch behavior.
+- Controller tests for login redirect and callback payload contract.
 - Token/session handling will be tightened in later milestones.
 
 ## Environment Variables

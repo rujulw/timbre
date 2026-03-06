@@ -19,7 +19,7 @@ Build timbre in a clean, showcaseable, industry-standard GitHub Flow, using the 
 - [x] Auth login + callback skeleton
 - [x] Spotify token/profile service
 - [x] User persistence for token metadata
-- [ ] Auth-focused test coverage
+- [x] Auth-focused test coverage
 
 ## Milestone 3 — Dashboard Data Flow
 - [ ] Top tracks/artists/recent endpoints
