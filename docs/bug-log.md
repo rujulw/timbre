@@ -26,3 +26,9 @@
 - Risk: top-track entries may contain missing album references, which can break album grouping logic.
 - Fix: Added null-safe filtering for album/grouping before deriving top albums for hydration payload.
 - Verification: `cd backend && ./mvnw test` passed.
+
+## 2026-03-06 - Commit 13 frontend state module fast-refresh lint issue
+- Area: Frontend app-state module organization
+- Symptom: ESLint `react-refresh/only-export-components` error when component and hooks were exported from the same file.
+- Fix: Split state code into `AppStateProvider.jsx` (component export) and `appState.js` (context/hook export).
+- Verification: `cd frontend && npm run lint && npm run build` passed.

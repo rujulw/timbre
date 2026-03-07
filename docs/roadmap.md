@@ -24,7 +24,7 @@ Build timbre in a clean, showcaseable, industry-standard GitHub Flow, using the 
 ## Milestone 3 — Dashboard Data Flow
 - [x] Top tracks/artists/recent endpoints
 - [x] Aggregated hydration payload
-- [ ] Frontend callback hydration + global state bootstrap
+- [x] Frontend callback hydration + global state bootstrap
 - [ ] Dashboard overview + range switcher
 - [ ] Routing/state guard stabilization
 

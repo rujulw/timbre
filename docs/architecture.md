@@ -28,6 +28,11 @@ Target responsibilities:
 - Rendering analytics and player experiences.
 - Calling backend endpoints through a single API base URL.
 
+Current frontend state model:
+- Callback route exchanges `code` via backend callback endpoint.
+- Hydration payload is stored in app-level context + localStorage persistence.
+- Dashboard route reads hydrated state from global context.
+
 ### Backend (`backend`)
 Current responsibilities:
 - Spotify OAuth login/callback flow.
