@@ -14,3 +14,9 @@
 - Symptom 2: `SpotifyProperties` (record/final) could not be mocked under subclass mock-maker.
 - Fix 2: Updated `AuthControllerTest` to use a real `SpotifyProperties` instance instead of mocking.
 - Verification: `cd backend && ./mvnw test` passed with all auth tests green.
+
+## 2026-03-06 - Commit 11 Spotify pager null handling
+- Area: Dashboard data service methods (`top tracks/artists/recently played`)
+- Risk: Spotify API response body or `items` list may be absent on upstream failure/partial response.
+- Fix: Guarded pager/item nulls and return empty lists instead of bubbling a `NullPointerException`.
+- Verification: `cd backend && ./mvnw test` passed.

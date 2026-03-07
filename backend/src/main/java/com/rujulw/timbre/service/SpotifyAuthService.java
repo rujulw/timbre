@@ -1,9 +1,15 @@
 package com.rujulw.timbre.service;
 
 import com.rujulw.timbre.config.SpotifyProperties;
+import com.rujulw.timbre.dto.SpotifyArtistDTO;
+import com.rujulw.timbre.dto.SpotifyPager;
+import com.rujulw.timbre.dto.SpotifyRecentlyPlayedDTO;
+import com.rujulw.timbre.dto.SpotifyTrackDTO;
 import com.rujulw.timbre.dto.SpotifyTokenResponse;
 import com.rujulw.timbre.dto.SpotifyUserDTO;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -49,5 +55,47 @@ public class SpotifyAuthService {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                 .retrieve()
                 .body(SpotifyUserDTO.class);
+    }
+
+    public List<SpotifyTrackDTO> getTopTracks(String accessToken, String timeRange) {
+        String uri = spotifyProperties.apiBaseUrl() + "/me/top/tracks?time_range=" + timeRange + "&limit=50";
+        SpotifyPager<SpotifyTrackDTO> pager = restClient.get()
+                .uri(uri)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .retrieve()
+                .body(new ParameterizedTypeReference<SpotifyPager<SpotifyTrackDTO>>() { });
+
+        if (pager == null || pager.getItems() == null) {
+            return List.of();
+        }
+        return pager.getItems();
+    }
+
+    public List<SpotifyArtistDTO> getTopArtists(String accessToken, String timeRange) {
+        String uri = spotifyProperties.apiBaseUrl() + "/me/top/artists?time_range=" + timeRange + "&limit=50";
+        SpotifyPager<SpotifyArtistDTO> pager = restClient.get()
+                .uri(uri)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .retrieve()
+                .body(new ParameterizedTypeReference<SpotifyPager<SpotifyArtistDTO>>() { });
+
+        if (pager == null || pager.getItems() == null) {
+            return List.of();
+        }
+        return pager.getItems();
+    }
+
+    public List<SpotifyRecentlyPlayedDTO> getRecentlyPlayed(String accessToken) {
+        String uri = spotifyProperties.apiBaseUrl() + "/me/player/recently-played?limit=50";
+        SpotifyPager<SpotifyRecentlyPlayedDTO> pager = restClient.get()
+                .uri(uri)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .retrieve()
+                .body(new ParameterizedTypeReference<SpotifyPager<SpotifyRecentlyPlayedDTO>>() { });
+
+        if (pager == null || pager.getItems() == null) {
+            return List.of();
+        }
+        return pager.getItems();
     }
 }

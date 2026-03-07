@@ -33,6 +33,7 @@ Current responsibilities:
 - Spotify OAuth login/callback flow.
 - Spotify token exchange + profile retrieval.
 - User identity/token metadata sync to PostgreSQL.
+- Spotify analytics endpoints for top tracks, top artists, and recently played.
 - Safe translation of Spotify payloads to frontend-ready DTOs.
 
 Future responsibilities:

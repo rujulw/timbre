@@ -1,12 +1,16 @@
 package com.rujulw.timbre.controller;
 
 import com.rujulw.timbre.config.SpotifyProperties;
+import com.rujulw.timbre.dto.SpotifyArtistDTO;
+import com.rujulw.timbre.dto.SpotifyRecentlyPlayedDTO;
 import com.rujulw.timbre.dto.SpotifyTokenResponse;
+import com.rujulw.timbre.dto.SpotifyTrackDTO;
 import com.rujulw.timbre.dto.SpotifyUserDTO;
 import com.rujulw.timbre.model.User;
 import com.rujulw.timbre.service.SpotifyAuthService;
 import com.rujulw.timbre.service.UserService;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -68,5 +72,26 @@ public class AuthController {
         payload.put("user", currentUser);
         payload.put("message", "Spotify profile and token metadata persisted.");
         return ResponseEntity.ok(payload);
+    }
+
+    @GetMapping("/top-tracks")
+    public ResponseEntity<List<SpotifyTrackDTO>> getTopTracks(
+            @RequestParam String token,
+            @RequestParam(defaultValue = "short_term") String range
+    ) {
+        return ResponseEntity.ok(spotifyAuthService.getTopTracks(token, range));
+    }
+
+    @GetMapping("/top-artists")
+    public ResponseEntity<List<SpotifyArtistDTO>> getTopArtists(
+            @RequestParam String token,
+            @RequestParam(defaultValue = "short_term") String range
+    ) {
+        return ResponseEntity.ok(spotifyAuthService.getTopArtists(token, range));
+    }
+
+    @GetMapping("/recently-played")
+    public ResponseEntity<List<SpotifyRecentlyPlayedDTO>> getRecentlyPlayed(@RequestParam String token) {
+        return ResponseEntity.ok(spotifyAuthService.getRecentlyPlayed(token));
     }
 }
