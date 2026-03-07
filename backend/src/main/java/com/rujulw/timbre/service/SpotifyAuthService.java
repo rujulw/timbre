@@ -49,6 +49,21 @@ public class SpotifyAuthService {
                 .body(SpotifyTokenResponse.class);
     }
 
+    public SpotifyTokenResponse refreshAccessToken(String refreshToken) {
+        MultiValueMap<String, String> formBody = new LinkedMultiValueMap<>();
+        formBody.add("grant_type", "refresh_token");
+        formBody.add("refresh_token", refreshToken);
+        formBody.add("client_id", spotifyProperties.clientId());
+        formBody.add("client_secret", spotifyProperties.clientSecret());
+
+        return restClient.post()
+                .uri(spotifyProperties.tokenUrl())
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(formBody)
+                .retrieve()
+                .body(SpotifyTokenResponse.class);
+    }
+
     public SpotifyUserDTO getCurrentUser(String accessToken) {
         return restClient.get()
                 .uri(spotifyProperties.apiBaseUrl() + "/me")

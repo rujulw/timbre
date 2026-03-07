@@ -8,7 +8,7 @@ const TIME_RANGES = [
 ];
 
 const Dashboard = () => {
-  const { appState } = useAppState();
+  const { appState, updateAuthTokens } = useAppState();
   const [selectedRange, setSelectedRange] = useState('short_term');
   const [showMenu, setShowMenu] = useState(false);
   const [songs, setSongs] = useState(appState?.songs ?? []);
@@ -24,7 +24,10 @@ const Dashboard = () => {
   const itemsPerPage = 5;
 
   useEffect(() => {
-    if (!appState?.accessToken) {
+    const accessToken = appState?.accessToken ?? window.localStorage.getItem('spotify_access_token');
+    const refreshToken = appState?.refreshToken ?? window.localStorage.getItem('spotify_refresh_token');
+
+    if (!accessToken) {
       return;
     }
 
@@ -44,13 +47,30 @@ const Dashboard = () => {
 
       try {
         const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
-        const token = encodeURIComponent(appState.accessToken);
         const range = encodeURIComponent(selectedRange);
+        let activeToken = accessToken;
 
-        const [tracksResponse, artistsResponse] = await Promise.all([
-          fetch(`${apiBaseUrl}/api/auth/top-tracks?token=${token}&range=${range}`),
-          fetch(`${apiBaseUrl}/api/auth/top-artists?token=${token}&range=${range}`),
-        ]);
+        const loadTopData = (tokenValue) =>
+          Promise.all([
+            fetch(`${apiBaseUrl}/api/auth/top-tracks?token=${encodeURIComponent(tokenValue)}&range=${range}`),
+            fetch(`${apiBaseUrl}/api/auth/top-artists?token=${encodeURIComponent(tokenValue)}&range=${range}`),
+          ]);
+
+        let [tracksResponse, artistsResponse] = await loadTopData(activeToken);
+
+        if ((tracksResponse.status === 401 || artistsResponse.status === 401) && refreshToken) {
+          const refreshResponse = await fetch(
+            `${apiBaseUrl}/api/auth/refresh-token?refreshToken=${encodeURIComponent(refreshToken)}`
+          );
+          if (refreshResponse.ok) {
+            const refreshed = await refreshResponse.json();
+            if (refreshed?.accessToken) {
+              activeToken = refreshed.accessToken;
+              updateAuthTokens(refreshed.accessToken, refreshed.refreshToken);
+              [tracksResponse, artistsResponse] = await loadTopData(activeToken);
+            }
+          }
+        }
 
         if (!tracksResponse.ok || !artistsResponse.ok) {
           throw new Error('failed to load dashboard range');
@@ -79,7 +99,7 @@ const Dashboard = () => {
     return () => {
       cancelled = true;
     };
-  }, [appState, selectedRange]);
+  }, [appState, selectedRange, updateAuthTokens]);
 
   useEffect(() => {
     setArtistPage(0);
@@ -120,7 +140,7 @@ const Dashboard = () => {
         {loadError ? <p className="text-xs text-red-400">load error: {loadError}</p> : null}
 
         <div className="flex flex-col items-start gap-10 lg:flex-row">
-          <section className="w-full rounded-2xl border border-white/5 bg-[#121212] p-4 shadow-2xl lg:w-[35%]">
+          <section className="w-full rounded-2xl border border-white/5 bg-panel p-4 shadow-2xl lg:w-[35%]">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xl font-bold tracking-tighter lowercase">top tracks</h2>
               <button
@@ -131,7 +151,7 @@ const Dashboard = () => {
                 make playlist
               </button>
             </div>
-            <div className="h-[36.625rem] space-y-1 overflow-y-auto pr-2">
+            <div className="h-146.5 space-y-1 overflow-y-auto pr-2">
               {isLoading
                 ? [...Array(10)].map((_, index) => <SkeletonTrack key={index} />)
                 : songs.map((song, index) => (
@@ -169,7 +189,7 @@ const Dashboard = () => {
               </button>
 
               {showMenu ? (
-                <div className="absolute right-0 top-14 w-40 rounded-2xl border border-white/10 bg-[#121212]/90 p-2 shadow-2xl backdrop-blur-xl">
+                <div className="absolute right-0 top-14 w-40 rounded-2xl border border-white/10 bg-panel/90 p-2 shadow-2xl backdrop-blur-xl">
                   {TIME_RANGES.map((range) => (
                     <button
                       key={range.value}

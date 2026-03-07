@@ -9,8 +9,9 @@ import UnderConstruction from './components/UnderConstruction.jsx';
 
 function ProtectedRoute({ children }) {
   const { appState } = useAppState();
+  const legacyToken = window.localStorage.getItem('spotify_access_token');
 
-  if (!appState?.accessToken) {
+  if (!appState?.accessToken && !legacyToken) {
     return <Navigate to="/" replace />;
   }
 

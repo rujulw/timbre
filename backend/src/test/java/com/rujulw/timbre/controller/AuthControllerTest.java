@@ -116,4 +116,19 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.albums[0].id").value("album-1"))
                 .andExpect(jsonPath("$.recentlyPlayed[0].track.id").value("track-1"));
     }
+
+    @Test
+    void refreshToken_returnsRefreshedAccessToken() throws Exception {
+        SpotifyTokenResponse refreshed = new SpotifyTokenResponse();
+        refreshed.setAccessToken("new-access-456");
+        refreshed.setExpiresIn(3600);
+
+        when(spotifyAuthService.refreshAccessToken("refresh-abc")).thenReturn(refreshed);
+
+        mockMvc.perform(get("/api/auth/refresh-token").param("refreshToken", "refresh-abc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value("new-access-456"))
+                .andExpect(jsonPath("$.refreshToken").value("refresh-abc"))
+                .andExpect(jsonPath("$.expiresIn").value(3600));
+    }
 }

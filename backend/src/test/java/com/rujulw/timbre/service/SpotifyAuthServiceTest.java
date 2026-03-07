@@ -68,6 +68,29 @@ class SpotifyAuthServiceTest {
     }
 
     @Test
+    void refreshAccessToken_returnsNewAccessToken() {
+        server.expect(requestTo("https://accounts.spotify.com/api/token"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(content().string(containsString("grant_type=refresh_token")))
+                .andExpect(content().string(containsString("refresh_token=refresh-xyz")))
+                .andExpect(content().string(containsString("client_id=client-id-123")))
+                .andRespond(withSuccess("""
+                        {
+                          "access_token": "access-refreshed-1",
+                          "token_type": "Bearer",
+                          "scope": "user-read-email",
+                          "expires_in": 3600
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        SpotifyTokenResponse response = spotifyAuthService.refreshAccessToken("refresh-xyz");
+
+        assertEquals("access-refreshed-1", response.getAccessToken());
+        assertEquals(3600, response.getExpiresIn());
+        server.verify();
+    }
+
+    @Test
     void getCurrentUser_returnsUserProfile() {
         server.expect(requestTo("https://api.spotify.com/v1/me"))
                 .andExpect(method(HttpMethod.GET))

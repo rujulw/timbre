@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -103,6 +104,22 @@ public class AuthController {
     @GetMapping("/recently-played")
     public ResponseEntity<List<SpotifyRecentlyPlayedDTO>> getRecentlyPlayed(@RequestParam String token) {
         return ResponseEntity.ok(spotifyAuthService.getRecentlyPlayed(token));
+    }
+
+    @GetMapping("/refresh-token")
+    public ResponseEntity<Map<String, Object>> refreshToken(@RequestParam String refreshToken) {
+        SpotifyTokenResponse refreshed = spotifyAuthService.refreshAccessToken(refreshToken);
+        if (refreshed == null || refreshed.getAccessToken() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "refresh_failed"));
+        }
+
+        String resolvedRefreshToken = refreshed.getRefreshToken() != null ? refreshed.getRefreshToken() : refreshToken;
+        return ResponseEntity.ok(Map.of(
+                "accessToken", refreshed.getAccessToken(),
+                "refreshToken", resolvedRefreshToken,
+                "expiresIn", refreshed.getExpiresIn()
+        ));
     }
 
     private List<SpotifyTrackDTO.Album> calculateTopAlbums(List<SpotifyTrackDTO> topTracks) {
