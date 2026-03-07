@@ -18,6 +18,7 @@ import com.rujulw.timbre.model.User;
 import com.rujulw.timbre.service.SpotifyAuthService;
 import com.rujulw.timbre.service.UserService;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -137,5 +138,29 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.accessToken").value("new-access-456"))
                 .andExpect(jsonPath("$.refreshToken").value("refresh-abc"))
                 .andExpect(jsonPath("$.expiresIn").value(3600));
+    }
+
+    @Test
+    void currentlyPlaying_mapsIsPlayingAlias() throws Exception {
+        when(spotifyAuthService.getCurrentlyPlaying("token-abc", "refresh-abc"))
+                .thenReturn(Map.of("is_playing", true, "item", Map.of("id", "track-1")));
+
+        mockMvc.perform(get("/api/auth/currently-playing")
+                        .param("token", "token-abc")
+                        .param("refresh", "refresh-abc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.is_playing").value(true))
+                .andExpect(jsonPath("$.isPlaying").value(true))
+                .andExpect(jsonPath("$.item.id").value("track-1"));
+    }
+
+    @Test
+    void currentlyPlaying_returnsSafeFalseWhenServiceReturnsNull() throws Exception {
+        when(spotifyAuthService.getCurrentlyPlaying("token-abc", null)).thenReturn(null);
+
+        mockMvc.perform(get("/api/auth/currently-playing")
+                        .param("token", "token-abc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isPlaying").value(false));
     }
 }

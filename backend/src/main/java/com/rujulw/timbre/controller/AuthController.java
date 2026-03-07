@@ -11,6 +11,7 @@ import com.rujulw.timbre.model.User;
 import com.rujulw.timbre.service.SpotifyAuthService;
 import com.rujulw.timbre.service.UserService;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -112,6 +113,24 @@ public class AuthController {
     @GetMapping("/playlists")
     public ResponseEntity<List<SpotifyPlaylistDTO>> getPlaylists(@RequestParam String token) {
         return ResponseEntity.ok(spotifyAuthService.getUserPlaylists(token));
+    }
+
+    @GetMapping("/currently-playing")
+    public ResponseEntity<Map<String, Object>> getLivePlayback(
+            @RequestParam String token,
+            @RequestParam(required = false) String refresh
+    ) {
+        Map<String, Object> currentlyPlayingResponse = spotifyAuthService.getCurrentlyPlaying(token, refresh);
+        if (currentlyPlayingResponse == null) {
+            return ResponseEntity.ok(Map.of("isPlaying", false));
+        }
+        Map<String, Object> currentlyPlaying = new HashMap<>(currentlyPlayingResponse);
+
+        if (currentlyPlaying.containsKey("is_playing")) {
+            currentlyPlaying.put("isPlaying", currentlyPlaying.get("is_playing"));
+        }
+
+        return ResponseEntity.ok(currentlyPlaying);
     }
 
     @GetMapping("/refresh-token")

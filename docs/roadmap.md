@@ -3,6 +3,14 @@
 ## Goal
 Build timbre in a clean, showcaseable, industry-standard GitHub Flow, using the existing project as reference while producing a cleaner v1 codebase.
 
+## Current Position (As Of 2026-03-07)
+- Active stream: `feat-player-experience`.
+- Current commit target: **Commit 16** (`[impl] add live currently playing endpoint with token refresh fallback`).
+- Delivery style from this point onward:
+- Read `old-backend/` and `old-frontend/` first for behavior parity.
+- Port to `backend/` and `frontend/` with commit-scoped changes.
+- Continue strict sequence through commits 16-25.
+
 ## Immediate Baseline
 - [x] Commit 1: monorepo scaffold (`backend`, `frontend`, `docs`)
 - [x] Commit 2: architecture conventions, naming, and folder boundaries
@@ -29,7 +37,7 @@ Build timbre in a clean, showcaseable, industry-standard GitHub Flow, using the 
 - [x] Routing/state guard stabilization
 
 ## Milestone 4 — Player Experience
-- [ ] Live currently playing endpoint + refresh fallback
+- [x] Live currently playing endpoint + refresh fallback (Commit 16)
 - [ ] Global polling and session history behavior
 - [ ] Player page and vinyl interaction design
 - [ ] Navbar/session shell on protected routes

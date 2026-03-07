@@ -44,3 +44,26 @@
 - Risk: direct navigation to protected routes without hydrated auth state can lead to unstable user flow.
 - Fix: added centralized protected layout + route guard redirects to landing when auth state is missing.
 - Verification: `cd frontend && npm run lint && npm run build` passed.
+
+## 2026-03-07 - Dashboard top-tracks viewport over-expansion regression
+- Area: Frontend dashboard track list sizing logic
+- Symptom: rows expanded to oversized cards on larger layouts after switching from fixed viewport sizing to percentage-based row height.
+- Root cause: row height was tied to an unconstrained/stretched container (`100%`-based formula) instead of a bounded viewport.
+- Fix: restored bounded responsive viewport sizing (`TRACK_VIEWPORT_HEIGHT`) and derived row height from that fixed responsive bound.
+- Verification: `cd frontend && npm run lint && npm run build` passed.
+
+## 2026-03-07 - Dashboard parity drift in hover/pager interaction behavior
+- Area: Frontend dashboard card transitions and pager behavior
+- Symptom: album/artist/playlist page transitions did not match old-frontend interaction patterns after incremental refactors.
+- Root cause: class-level parity drift (`hover`/`cursor`/entry animation classes and page-key behavior) and non-identical paging helper semantics.
+- Fix: restored old-frontend interaction classes and paging semantics:
+- `getPage(list, page) => list?.slice(...) || []`
+- edge disabling via `(page + 1) * itemsPerPage >= (list?.length || 0)`
+- per-page keys `\`${id}-${page}\`` for card remount parity.
+- Verification: `cd frontend && npm run lint && npm run build` passed.
+
+## 2026-03-07 - Commit 16 currently-playing refresh fallback hardening
+- Area: Backend live playback endpoint (`/api/auth/currently-playing`)
+- Risk: expired access tokens during live playback polling can cause repeated unauthorized responses and break player continuity.
+- Fix: added service-level unauthorized handling with refresh-token retry, plus controller-level response normalization (`is_playing` -> `isPlaying`) and null-safe fallback payload.
+- Verification: `cd backend && ./mvnw test` passed.

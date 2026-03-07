@@ -9,6 +9,7 @@ import com.rujulw.timbre.dto.SpotifyTrackDTO;
 import com.rujulw.timbre.dto.SpotifyTokenResponse;
 import com.rujulw.timbre.dto.SpotifyUserDTO;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
@@ -16,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 @Service
@@ -132,5 +134,45 @@ public class SpotifyAuthService {
                         Boolean.TRUE.equals(playlist.getPublicPlaylist())
                                 || Boolean.TRUE.equals(playlist.getCollaborative()))
                 .toList();
+    }
+
+    public Map<String, Object> getCurrentlyPlaying(String accessToken, String refreshToken) {
+        try {
+            return executeCurrentlyPlayingRequest(accessToken);
+        } catch (HttpClientErrorException.Unauthorized unauthorized) {
+            if (refreshToken == null || refreshToken.isBlank()) {
+                return Map.of("is_playing", false, "error", "refresh_failed");
+            }
+
+            try {
+                SpotifyTokenResponse refreshed = refreshAccessToken(refreshToken);
+                String newAccessToken = refreshed != null ? refreshed.getAccessToken() : null;
+                if (newAccessToken == null || newAccessToken.isBlank()) {
+                    return Map.of("is_playing", false, "error", "refresh_failed");
+                }
+
+                Map<String, Object> result = executeCurrentlyPlayingRequest(newAccessToken);
+                if (result == null) {
+                    return Map.of("is_playing", false);
+                }
+                result.put("newAccessToken", newAccessToken);
+                return result;
+            } catch (Exception refreshFailure) {
+                return Map.of("is_playing", false, "error", "refresh_failed");
+            }
+        } catch (Exception e) {
+            return Map.of("is_playing", false);
+        }
+    }
+
+    private Map<String, Object> executeCurrentlyPlayingRequest(String accessToken) {
+        String uri = spotifyProperties.apiBaseUrl() + "/me/player/currently-playing";
+        Map<String, Object> response = restClient.get()
+                .uri(uri)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .retrieve()
+                .body(new ParameterizedTypeReference<Map<String, Object>>() { });
+
+        return response != null ? response : Map.of("is_playing", false);
     }
 }
