@@ -44,7 +44,9 @@ Current frontend state model:
 - Dashboard uses loading skeleton states while range data is being fetched.
 - Protected layout wraps authenticated routes and applies consistent top navigation shell.
 - Route guards enforce authenticated access to dashboard/player/stats/settings paths.
-- Player route remains a guarded placeholder until commits 17-18 wire polling and player UI.
+- App-level live playback poller now runs against `/api/auth/currently-playing` every 5 seconds.
+- Poller updates `activeTrack`, `currentlyPlaying`, and deduped `liveHistory` in app state.
+- Player route remains a guarded placeholder until commit 18 wires full player UI.
 
 ### Backend (`backend`)
 Current responsibilities:
@@ -72,7 +74,7 @@ Future responsibilities:
 - Access/refresh token handling is managed through backend-auth flow.
 - Frontend initializes dashboard state from aggregated callback data (`songs`, `artists`, `albums`, `recentlyPlayed`) and auth metadata.
 4. Commit 16 establishes backend currently-playing endpoint with refresh fallback.
-5. Commit 17 introduces frontend polling/session-history loop consuming that endpoint.
+5. Commit 17 runs frontend polling/session-history loop consuming that endpoint.
 6. User interactions (range switches, snapshot creation) call backend APIs.
 
 ## Data Model

@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppState } from '../state/appState.js';
 
 const Callback = () => {
   const navigate = useNavigate();
   const hasFetched = useRef(false);
+  const { setHydratedState } = useAppState();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -48,23 +50,38 @@ const Callback = () => {
                 localStorage.setItem('display_name', data.displayName);
             }
 
-            navigate('/dashboard', { 
-                    state: { 
-                        songs: data.songs || [], 
-                        artists: data.artists || [], 
-                        recentlyPlayed: data.recentlyPlayed || [],
-                        albums: data.albums || [],
-                        playlists: data.playlists || [],
-                        currentlyPlaying: data.currentlyPlaying
-                    } 
-                });
+            const currentlyPlayingTrack = data?.currentlyPlaying?.item || data?.currentlyPlaying?.track || null;
+            const currentlyPlayingStatus = data?.currentlyPlaying?.is_playing ?? data?.currentlyPlaying?.isPlaying ?? false;
+
+            setHydratedState({
+                status: data.status ?? 'dashboard_hydrated',
+                userId: data.userId ?? null,
+                spotifyId: data.spotifyId ?? data?.user?.id ?? null,
+                accessToken: data.accessToken ?? localStorage.getItem('spotify_access_token'),
+                refreshToken: data.refreshToken ?? localStorage.getItem('spotify_refresh_token'),
+                expiresIn: data.expiresIn ?? null,
+                user: data.user ?? null,
+                profileUrl: data.profileUrl ?? data?.user?.externalUrls?.spotify ?? null,
+                songs: data.songs || [],
+                artists: data.artists || [],
+                albums: data.albums || [],
+                playlists: data.playlists || [],
+                recentlyPlayed: data.recentlyPlayed || [],
+                liveHistory: data.recentlyPlayed || [],
+                currentlyPlaying: data.currentlyPlaying || null,
+                activeTrack: currentlyPlayingTrack
+                  ? { track: currentlyPlayingTrack, isPlaying: currentlyPlayingStatus }
+                  : null,
+            });
+
+            navigate('/dashboard', { replace: true });
         })
         .catch(err => {
           console.error("Fetch error:", err);
           navigate('/'); 
         });
     }
-  }, [navigate]);
+  }, [navigate, setHydratedState]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black text-white">

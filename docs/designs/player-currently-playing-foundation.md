@@ -10,6 +10,7 @@ This commit is backend-first and sets the data contract for commit 17 frontend p
 
 Status:
 - Implemented in `backend` with controller + service coverage.
+- Consumed by commit 17 frontend polling workflow.
 
 ## Reference-First Implementation Pattern
 For this phase, behavior is mirrored from:

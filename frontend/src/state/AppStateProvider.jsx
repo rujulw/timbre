@@ -85,13 +85,17 @@ function syncLegacyStorage(state) {
 export function AppStateProvider({ children }) {
   const [appState, setAppState] = useState(readInitialState);
 
+  const persistState = (nextState) => {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+    syncLegacyStorage(nextState);
+  };
+
   const value = useMemo(
     () => ({
       appState,
       setHydratedState: (nextState) => {
         setAppState(nextState);
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
-        syncLegacyStorage(nextState);
+        persistState(nextState);
       },
       updateAuthTokens: (accessToken, refreshToken) => {
         setAppState((prev) => {
@@ -100,8 +104,23 @@ export function AppStateProvider({ children }) {
             accessToken,
             refreshToken: refreshToken ?? prev?.refreshToken ?? null,
           };
-          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
-          syncLegacyStorage(nextState);
+          persistState(nextState);
+          return nextState;
+        });
+      },
+      updateAppState: (updater) => {
+        setAppState((prev) => {
+          const baseState = prev ?? {};
+          const nextState =
+            typeof updater === 'function'
+              ? updater(baseState)
+              : { ...baseState, ...(updater ?? {}) };
+
+          if (!nextState) {
+            return prev;
+          }
+
+          persistState(nextState);
           return nextState;
         });
       },

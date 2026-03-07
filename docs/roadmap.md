@@ -38,7 +38,7 @@ Build timbre in a clean, showcaseable, industry-standard GitHub Flow, using the 
 
 ## Milestone 4 — Player Experience
 - [x] Live currently playing endpoint + refresh fallback (Commit 16)
-- [ ] Global polling and session history behavior
+- [x] Global polling and session history behavior (Commit 17)
 - [ ] Player page and vinyl interaction design
 - [ ] Navbar/session shell on protected routes
 - [ ] Frontend tests for player + routing behavior

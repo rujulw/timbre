@@ -67,3 +67,9 @@
 - Risk: expired access tokens during live playback polling can cause repeated unauthorized responses and break player continuity.
 - Fix: added service-level unauthorized handling with refresh-token retry, plus controller-level response normalization (`is_playing` -> `isPlaying`) and null-safe fallback payload.
 - Verification: `cd backend && ./mvnw test` passed.
+
+## 2026-03-07 - Commit 17 polling/state hydration continuity
+- Area: Frontend app shell playback sync (`App.jsx`, callback hydration, app-state provider)
+- Risk: without centralized polling state, player session history drifts and currently-playing status is lost between route transitions.
+- Fix: added app-level polling loop (5s), deduped `liveHistory` append logic, `activeTrack`/`currentlyPlaying` sync, and callback-time state hydration into app context.
+- Verification: `cd frontend && npm run lint && npm run build` passed.
