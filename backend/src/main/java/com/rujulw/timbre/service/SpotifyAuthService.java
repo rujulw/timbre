@@ -3,6 +3,7 @@ package com.rujulw.timbre.service;
 import com.rujulw.timbre.config.SpotifyProperties;
 import com.rujulw.timbre.dto.SpotifyArtistDTO;
 import com.rujulw.timbre.dto.SpotifyPager;
+import com.rujulw.timbre.dto.SpotifyPlaylistDTO;
 import com.rujulw.timbre.dto.SpotifyRecentlyPlayedDTO;
 import com.rujulw.timbre.dto.SpotifyTrackDTO;
 import com.rujulw.timbre.dto.SpotifyTokenResponse;
@@ -112,5 +113,24 @@ public class SpotifyAuthService {
             return List.of();
         }
         return pager.getItems();
+    }
+
+    public List<SpotifyPlaylistDTO> getUserPlaylists(String accessToken) {
+        String uri = spotifyProperties.apiBaseUrl() + "/me/playlists?limit=50";
+        SpotifyPager<SpotifyPlaylistDTO> pager = restClient.get()
+                .uri(uri)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .retrieve()
+                .body(new ParameterizedTypeReference<SpotifyPager<SpotifyPlaylistDTO>>() { });
+
+        if (pager == null || pager.getItems() == null) {
+            return List.of();
+        }
+
+        return pager.getItems().stream()
+                .filter(playlist ->
+                        Boolean.TRUE.equals(playlist.getPublicPlaylist())
+                                || Boolean.TRUE.equals(playlist.getCollaborative()))
+                .toList();
     }
 }

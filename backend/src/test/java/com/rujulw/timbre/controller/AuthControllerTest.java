@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.rujulw.timbre.config.SpotifyProperties;
 import com.rujulw.timbre.dto.SpotifyArtistDTO;
+import com.rujulw.timbre.dto.SpotifyPlaylistDTO;
 import com.rujulw.timbre.dto.SpotifyRecentlyPlayedDTO;
 import com.rujulw.timbre.dto.SpotifyTokenResponse;
 import com.rujulw.timbre.dto.SpotifyTrackDTO;
@@ -95,12 +96,17 @@ class AuthControllerTest {
         recent.setTrack(track);
         recent.setPlayedAt("2026-03-06T00:00:00Z");
 
+        SpotifyPlaylistDTO playlist = new SpotifyPlaylistDTO();
+        playlist.setId("playlist-1");
+        playlist.setName("Playlist One");
+
         when(spotifyAuthService.exchangeCodeForToken("code-abc")).thenReturn(tokenResponse);
         when(spotifyAuthService.getCurrentUser("access-123")).thenReturn(profile);
         when(userService.syncUser(profile, tokenResponse)).thenReturn(user);
         when(spotifyAuthService.getTopTracks("access-123", "short_term")).thenReturn(List.of(track));
         when(spotifyAuthService.getTopArtists("access-123", "short_term")).thenReturn(List.of(artist));
         when(spotifyAuthService.getRecentlyPlayed("access-123")).thenReturn(List.of(recent));
+        when(spotifyAuthService.getUserPlaylists("access-123")).thenReturn(List.of(playlist));
 
         mockMvc.perform(get("/api/auth/callback").param("code", "code-abc"))
                 .andExpect(status().isOk())
@@ -114,6 +120,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.songs[0].id").value("track-1"))
                 .andExpect(jsonPath("$.artists[0].id").value("artist-1"))
                 .andExpect(jsonPath("$.albums[0].id").value("album-1"))
+                .andExpect(jsonPath("$.playlists[0].id").value("playlist-1"))
                 .andExpect(jsonPath("$.recentlyPlayed[0].track.id").value("track-1"));
     }
 

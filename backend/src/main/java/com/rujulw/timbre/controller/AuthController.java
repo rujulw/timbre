@@ -2,6 +2,7 @@ package com.rujulw.timbre.controller;
 
 import com.rujulw.timbre.config.SpotifyProperties;
 import com.rujulw.timbre.dto.SpotifyArtistDTO;
+import com.rujulw.timbre.dto.SpotifyPlaylistDTO;
 import com.rujulw.timbre.dto.SpotifyRecentlyPlayedDTO;
 import com.rujulw.timbre.dto.SpotifyTokenResponse;
 import com.rujulw.timbre.dto.SpotifyTrackDTO;
@@ -67,6 +68,7 @@ public class AuthController {
         List<SpotifyTrackDTO> topTracks = spotifyAuthService.getTopTracks(tokenResponse.getAccessToken(), "short_term");
         List<SpotifyArtistDTO> topArtists = spotifyAuthService.getTopArtists(tokenResponse.getAccessToken(), "short_term");
         List<SpotifyRecentlyPlayedDTO> recentTracks = spotifyAuthService.getRecentlyPlayed(tokenResponse.getAccessToken());
+        List<SpotifyPlaylistDTO> playlists = spotifyAuthService.getUserPlaylists(tokenResponse.getAccessToken());
         List<SpotifyTrackDTO.Album> topAlbums = calculateTopAlbums(topTracks);
 
         Map<String, Object> payload = new LinkedHashMap<>();
@@ -80,6 +82,7 @@ public class AuthController {
         payload.put("songs", topTracks);
         payload.put("artists", topArtists);
         payload.put("albums", topAlbums);
+        payload.put("playlists", playlists);
         payload.put("recentlyPlayed", recentTracks);
         payload.put("message", "Initial dashboard hydration payload prepared.");
         return ResponseEntity.ok(payload);
@@ -104,6 +107,11 @@ public class AuthController {
     @GetMapping("/recently-played")
     public ResponseEntity<List<SpotifyRecentlyPlayedDTO>> getRecentlyPlayed(@RequestParam String token) {
         return ResponseEntity.ok(spotifyAuthService.getRecentlyPlayed(token));
+    }
+
+    @GetMapping("/playlists")
+    public ResponseEntity<List<SpotifyPlaylistDTO>> getPlaylists(@RequestParam String token) {
+        return ResponseEntity.ok(spotifyAuthService.getUserPlaylists(token));
     }
 
     @GetMapping("/refresh-token")
