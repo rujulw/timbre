@@ -42,7 +42,11 @@ backend-test:
 	@cd backend && ./mvnw test
 
 backend-run:
-	@cd backend && ./mvnw spring-boot:run
+	@cd backend && \
+		set -a; \
+		[ -f .env ] && . ./.env || true; \
+		set +a; \
+		./mvnw spring-boot:run
 
 frontend-install:
 	@cd frontend && npm install

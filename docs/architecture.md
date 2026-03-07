@@ -28,11 +28,21 @@ Target responsibilities:
 - Rendering analytics and player experiences.
 - Calling backend endpoints through a single API base URL.
 
+Current frontend state model:
+- Callback route exchanges `code` via backend callback endpoint.
+- Hydration payload is stored in app-level context + localStorage persistence.
+- Dashboard route reads hydrated state from global context.
+- Dashboard supports time-range switching (`short_term`, `medium_term`, `long_term`) for top tracks/artists.
+- Dashboard uses loading skeleton states while range data is being fetched.
+- Protected layout wraps authenticated routes and applies consistent top navigation shell.
+- Route guards enforce authenticated access to dashboard/player/stats/settings paths.
+
 ### Backend (`backend`)
 Current responsibilities:
 - Spotify OAuth login/callback flow.
 - Spotify token exchange + profile retrieval.
 - User identity/token metadata sync to PostgreSQL.
+- Spotify analytics endpoints for top tracks, top artists, and recently played.
 - Safe translation of Spotify payloads to frontend-ready DTOs.
 
 Future responsibilities:
@@ -45,7 +55,7 @@ Future responsibilities:
 2. Frontend redirects to backend `/api/auth/login`.
 3. Backend completes OAuth callback and returns hydrated bootstrap payload.
 - Access/refresh token handling is managed through backend-auth flow.
-- Frontend initializes dashboard/player state from callback payload.
+- Frontend initializes dashboard state from aggregated callback data (`songs`, `artists`, `albums`, `recentlyPlayed`) and auth metadata.
 4. Frontend polls currently playing via backend and updates session state.
 5. User interactions (range switches, snapshot creation) call backend APIs.
 
