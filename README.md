@@ -8,7 +8,7 @@ Timbre focuses on a clean split-stack architecture:
 
 See:
 - `docs/architecture.md` for system structure and synchronization model.
-- `roadmap.md` for planned refactors and feature expansion.
+- `docs/roadmap.md` for planned refactors and feature expansion.
 
 ## Tech Stack
 
@@ -67,6 +67,10 @@ Frontend default: `http://127.0.0.1:5173`
 SPOTIFY_CLIENT_ID=
 SPOTIFY_CLIENT_SECRET=
 SPOTIFY_REDIRECT_URI=http://127.0.0.1:5173/callback
+SPOTIFY_AUTHORIZE_URL=https://accounts.spotify.com/authorize
+SPOTIFY_TOKEN_URL=https://accounts.spotify.com/api/token
+SPOTIFY_API_BASE_URL=https://api.spotify.com/v1
+SPOTIFY_SCOPES=user-read-email,user-read-private,user-top-read,user-read-recently-played,user-read-currently-playing,playlist-modify-private,playlist-modify-public
 FRONTEND_URL=http://127.0.0.1:5173
 ```
 
