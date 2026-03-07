@@ -20,3 +20,9 @@
 - Risk: Spotify API response body or `items` list may be absent on upstream failure/partial response.
 - Fix: Guarded pager/item nulls and return empty lists instead of bubbling a `NullPointerException`.
 - Verification: `cd backend && ./mvnw test` passed.
+
+## 2026-03-06 - Commit 12 callback album aggregation null-safety
+- Area: Aggregated callback hydration contract
+- Risk: top-track entries may contain missing album references, which can break album grouping logic.
+- Fix: Added null-safe filtering for album/grouping before deriving top albums for hydration payload.
+- Verification: `cd backend && ./mvnw test` passed.

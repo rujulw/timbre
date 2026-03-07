@@ -9,9 +9,11 @@ import com.rujulw.timbre.dto.SpotifyUserDTO;
 import com.rujulw.timbre.model.User;
 import com.rujulw.timbre.service.SpotifyAuthService;
 import com.rujulw.timbre.service.UserService;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -61,16 +63,24 @@ public class AuthController {
         SpotifyTokenResponse tokenResponse = spotifyAuthService.exchangeCodeForToken(code);
         SpotifyUserDTO currentUser = spotifyAuthService.getCurrentUser(tokenResponse.getAccessToken());
         User persistedUser = userService.syncUser(currentUser, tokenResponse);
+        List<SpotifyTrackDTO> topTracks = spotifyAuthService.getTopTracks(tokenResponse.getAccessToken(), "short_term");
+        List<SpotifyArtistDTO> topArtists = spotifyAuthService.getTopArtists(tokenResponse.getAccessToken(), "short_term");
+        List<SpotifyRecentlyPlayedDTO> recentTracks = spotifyAuthService.getRecentlyPlayed(tokenResponse.getAccessToken());
+        List<SpotifyTrackDTO.Album> topAlbums = calculateTopAlbums(topTracks);
 
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("status", "user_synced");
+        payload.put("status", "dashboard_hydrated");
         payload.put("userId", persistedUser.getId());
         payload.put("spotifyId", persistedUser.getSpotifyId());
         payload.put("accessToken", tokenResponse.getAccessToken());
         payload.put("refreshToken", tokenResponse.getRefreshToken());
         payload.put("expiresIn", tokenResponse.getExpiresIn());
         payload.put("user", currentUser);
-        payload.put("message", "Spotify profile and token metadata persisted.");
+        payload.put("songs", topTracks);
+        payload.put("artists", topArtists);
+        payload.put("albums", topAlbums);
+        payload.put("recentlyPlayed", recentTracks);
+        payload.put("message", "Initial dashboard hydration payload prepared.");
         return ResponseEntity.ok(payload);
     }
 
@@ -93,5 +103,24 @@ public class AuthController {
     @GetMapping("/recently-played")
     public ResponseEntity<List<SpotifyRecentlyPlayedDTO>> getRecentlyPlayed(@RequestParam String token) {
         return ResponseEntity.ok(spotifyAuthService.getRecentlyPlayed(token));
+    }
+
+    private List<SpotifyTrackDTO.Album> calculateTopAlbums(List<SpotifyTrackDTO> topTracks) {
+        if (topTracks == null || topTracks.isEmpty()) {
+            return List.of();
+        }
+
+        Map<String, Long> albumCounts = topTracks.stream()
+                .map(SpotifyTrackDTO::getAlbum)
+                .filter(album -> album != null && album.getName() != null)
+                .collect(Collectors.groupingBy(SpotifyTrackDTO.Album::getName, Collectors.counting()));
+
+        return topTracks.stream()
+                .map(SpotifyTrackDTO::getAlbum)
+                .filter(album -> album != null && album.getName() != null)
+                .distinct()
+                .sorted(Comparator.comparing((SpotifyTrackDTO.Album a) -> albumCounts.getOrDefault(a.getName(), 0L)).reversed())
+                .limit(10)
+                .toList();
     }
 }

@@ -24,4 +24,6 @@ Added DTOs aligned to Spotify response shape:
 ## API Contract Notes
 - `range` defaults to `short_term`.
 - Endpoint payloads are raw typed lists for now.
-- Aggregated callback hydration is intentionally deferred to commit 12.
+- Aggregated callback hydration (commit 12) now returns:
+- auth/user metadata (`accessToken`, `refreshToken`, `expiresIn`, `userId`, `spotifyId`, `user`)
+- dashboard bootstrap data (`songs`, `artists`, `albums`, `recentlyPlayed`)

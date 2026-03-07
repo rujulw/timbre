@@ -46,7 +46,7 @@ Future responsibilities:
 2. Frontend redirects to backend `/api/auth/login`.
 3. Backend completes OAuth callback and returns hydrated bootstrap payload.
 - Access/refresh token handling is managed through backend-auth flow.
-- Frontend initializes dashboard/player state from callback payload.
+- Frontend initializes dashboard state from aggregated callback data (`songs`, `artists`, `albums`, `recentlyPlayed`) and auth metadata.
 4. Frontend polls currently playing via backend and updates session state.
 5. User interactions (range switches, snapshot creation) call backend APIs.
 
