@@ -137,7 +137,7 @@ const Dashboard = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showMenu]);
 
-  const getPage = (list, page) => list.slice(page * itemsPerPage, (page + 1) * itemsPerPage);
+  const getPage = (list, page) => list?.slice(page * itemsPerPage, (page + 1) * itemsPerPage) || [];
 
   const handleRedirect = (type, id, webUrl) => {
     if (!id) {
@@ -153,11 +153,11 @@ const Dashboard = () => {
 
   return (
     <div className="w-full px-4 pb-10 md:px-8 xl:px-12">
-      <main className="mx-auto w-full max-w-[1420px] space-y-7">
+      <main className="mx-auto w-full max-w-355 space-y-7">
         {loadError ? <p className="text-xs text-red-400">load error: {loadError}</p> : null}
 
         <div className="flex w-full flex-col items-stretch gap-8 xl:gap-10 lg:flex-row">
-          <section className="flex w-full flex-col rounded-2xl border border-white/5 bg-panel p-4 shadow-2xl lg:basis-[35%] lg:min-w-[23rem] lg:max-w-[34rem]">
+          <section className="flex w-full flex-col rounded-2xl border border-white/5 bg-panel p-4 shadow-2xl lg:basis-[35%] lg:min-w-92ax-w-[34rem]">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xl font-bold tracking-tighter lowercase">top tracks</h2>
               <button
@@ -183,7 +183,7 @@ const Dashboard = () => {
                       key={`${song.id ?? 'song'}-${index}`}
                       type="button"
                       onClick={() => handleRedirect('track', song.id, song.externalUrls?.spotify)}
-                      className="group flex w-full shrink-0 items-center gap-3 rounded-lg px-2 py-1 text-left transition-all duration-300 hover:bg-white/5"
+                      className="group flex w-full shrink-0 items-center gap-3 rounded-lg px-2 py-1 text-left transition-all duration-300 hover:bg-white/5 cursor-pointer"
                       style={{ height: trackRowHeight }}
                     >
                       <span className="w-4 shrink-0 text-[10px] font-mono text-zinc-700">{index + 1}</span>
@@ -248,21 +248,29 @@ const Dashboard = () => {
                 onPrev={() => setAlbumPage((p) => Math.max(0, p - 1))}
                 onNext={() => setAlbumPage((p) => p + 1)}
                 disablePrev={albumPage === 0}
-                disableNext={(albumPage + 1) * itemsPerPage >= albums.length}
+                disableNext={(albumPage + 1) * itemsPerPage >= (albums?.length || 0)}
               />
               <div className="grid grid-cols-5 gap-3">
                 {isLoading
                   ? [...Array(5)].map((_, index) => <SkeletonAlbum key={index} />)
-                  : getPage(albums, albumPage).map((album, index) => (
+                  : getPage(albums, albumPage).map((album, i) => (
                       <button
-                        key={`${album.id ?? 'album'}-${albumPage}-${index}`}
+                        key={`${album.id}-${albumPage}`}
                         type="button"
                         onClick={() => handleRedirect('album', album.id, album.externalUrls?.spotify)}
-                        className="group flex flex-col text-left"
-                        style={{ width: RAIL_TILE_SIZE }}
+                        className="relative flex flex-col group cursor-pointer hover:bg-white/3 animate-in fade-in slide-in-from-right-8 text-left"
+                        style={{
+                          width: RAIL_TILE_SIZE,
+                          animationDelay: `${i * 40}ms`,
+                          animationFillMode: 'both',
+                        }}
                       >
                         <div className="mb-2 overflow-hidden bg-white/5 shadow-2xl" style={{ width: RAIL_TILE_SIZE, height: RAIL_TILE_SIZE }}>
-                          <img src={album.images?.[0]?.url} className="h-full w-full object-cover" alt="" />
+                          <img
+                            src={album.images?.[0]?.url}
+                            className="w-full h-full object-cover transition-transform duration-700"
+                            alt=""
+                          />
                         </div>
                         <p className="truncate text-[10px] font-bold leading-tight text-zinc-300">{album.name}</p>
                       </button>
@@ -276,26 +284,33 @@ const Dashboard = () => {
                 onPrev={() => setArtistPage((p) => Math.max(0, p - 1))}
                 onNext={() => setArtistPage((p) => p + 1)}
                 disablePrev={artistPage === 0}
-                disableNext={(artistPage + 1) * itemsPerPage >= artists.length}
+                disableNext={(artistPage + 1) * itemsPerPage >= (artists?.length || 0)}
               />
-              <div className="grid grid-cols-5 gap-3">
+              <div key={artistPage} className="grid grid-cols-5 gap-4 -mx-2 px-2 overflow-visible">
                 {isLoading
                   ? [...Array(5)].map((_, index) => <SkeletonArtist key={index} />)
-                  : getPage(artists, artistPage).map((artist, index) => (
+                  : getPage(artists, artistPage).map((artist, i) => (
                       <button
-                        key={`${artist.id ?? 'artist'}-${artistPage}-${index}`}
+                        key={`${artist.id}-${artistPage}`}
                         type="button"
                         onClick={() => handleRedirect('artist', artist.id, artist.externalUrls?.spotify)}
-                        className="group flex flex-col items-center p-1 text-center"
-                        style={{ width: ARTIST_TILE_SIZE }}
+                        className="relative flex flex-col items-center p-1 transition-all duration-300 ease-out group cursor-pointer hover:bg-white/3 hover:z-50 active:scale-95 animate-in fade-in slide-in-from-right-8 text-center"
+                        style={{
+                          width: ARTIST_TILE_SIZE,
+                          animationDelay: `${i * 40}ms`,
+                          animationFillMode: 'both',
+                        }}
                       >
                         <div
-                          className="mb-3 overflow-hidden rounded-full border border-white/5 bg-white/5"
-                          style={{ width: ARTIST_TILE_SIZE, height: ARTIST_TILE_SIZE }}
+                          className="w-full aspect-square rounded-full overflow-hidden border border-white/5 transition-transform duration-500 group-hover:scale-105 bg-white/5 mb-4"
                         >
-                          <img src={artist.images?.[0]?.url} className="h-full w-full object-cover" alt="" />
+                          <img
+                            src={artist.images?.[0]?.url}
+                            className="w-full aspect-square object-cover h-full transition-all duration-700"
+                            alt=""
+                          />
                         </div>
-                        <p className="w-full truncate text-[15px] font-bold text-zinc-300 group-hover:text-white">{artist.name}</p>
+                        <p className="w-full truncate text-[15px] font-bold text-gray-300 hover:text-white">{artist.name}</p>
                       </button>
                     ))}
               </div>
@@ -307,20 +322,24 @@ const Dashboard = () => {
                 onPrev={() => setPlaylistPage((p) => Math.max(0, p - 1))}
                 onNext={() => setPlaylistPage((p) => p + 1)}
                 disablePrev={playlistPage === 0}
-                disableNext={(playlistPage + 1) * itemsPerPage >= playlists.length}
+                disableNext={(playlistPage + 1) * itemsPerPage >= (playlists?.length || 0)}
               />
               <div className="grid grid-cols-5 gap-3">
                 {isLoading
                   ? [...Array(5)].map((_, index) => <SkeletonPlaylist key={index} />)
-                  : getPage(playlists, playlistPage).map((playlist, index) => (
+                  : getPage(playlists, playlistPage).map((playlist, i) => (
                       <button
-                        key={`${playlist.id ?? 'playlist'}-${playlistPage}-${index}`}
+                        key={`${playlist.id}-${playlistPage}`}
                         type="button"
                         onClick={() =>
                           handleRedirect('playlist', playlist.id, playlist.externalUrls?.spotify ?? playlist.external_urls?.spotify)
                         }
-                        className="group flex flex-col text-left"
-                        style={{ width: RAIL_TILE_SIZE }}
+                        className="relative flex flex-col group cursor-pointer hover:bg-white/3 animate-in fade-in slide-in-from-right-8 text-left"
+                        style={{
+                          width: RAIL_TILE_SIZE,
+                          animationDelay: `${i * 40}ms`,
+                          animationFillMode: 'both',
+                        }}
                       >
                         <div className="mb-2 overflow-hidden bg-white/5 shadow-2xl" style={{ width: RAIL_TILE_SIZE, height: RAIL_TILE_SIZE }}>
                           <img src={playlist.images?.[0]?.url} className="h-full w-full object-cover" alt="" />
@@ -349,7 +368,7 @@ function PagerHeader({ title, onPrev, onNext, disablePrev, disableNext }) {
           type="button"
           onClick={onPrev}
           disabled={disablePrev}
-          className="rounded-full bg-white/5 p-1 transition-all duration-200 hover:bg-white/10 disabled:opacity-10"
+          className="rounded-full bg-white/5 p-1 transition-all duration-200 hover:bg-white/10 active:scale-90 disabled:opacity-10"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M15 18l-6-6 6-6" />
@@ -359,7 +378,7 @@ function PagerHeader({ title, onPrev, onNext, disablePrev, disableNext }) {
           type="button"
           onClick={onNext}
           disabled={disableNext}
-          className="rounded-full bg-white/5 p-1 transition-all duration-200 hover:bg-white/10 disabled:opacity-10"
+          className="rounded-full bg-white/5 p-1 transition-all duration-200 hover:bg-white/10 active:scale-90 disabled:opacity-10"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M9 18l6-6-6-6" />
