@@ -6,6 +6,13 @@ const TIME_RANGES = [
   { value: 'medium_term', label: '6 Months' },
   { value: 'long_term', label: 'All Time' },
 ];
+const VISIBLE_TRACK_ROWS = 10;
+const TRACK_ROW_GAP = '0.2rem';
+const TRACK_VIEWPORT_HEIGHT = 'clamp(32rem, 62vh, 44rem)';
+const RAIL_TILE_SIZE = 'clamp(6.6rem, 8.6vw, 9.6rem)';
+const ARTIST_TILE_SIZE = RAIL_TILE_SIZE;
+
+const trackRowHeight = `calc((${TRACK_VIEWPORT_HEIGHT} - (${VISIBLE_TRACK_ROWS} - 1) * ${TRACK_ROW_GAP}) / ${VISIBLE_TRACK_ROWS})`;
 
 const Dashboard = () => {
   const { appState, updateAuthTokens } = useAppState();
@@ -14,7 +21,7 @@ const Dashboard = () => {
   const [songs, setSongs] = useState(appState?.songs ?? []);
   const [artists, setArtists] = useState(appState?.artists ?? []);
   const [albums, setAlbums] = useState(appState?.albums ?? []);
-  const [playlists] = useState(appState?.playlists ?? []);
+  const [playlists, setPlaylists] = useState(appState?.playlists ?? []);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [artistPage, setArtistPage] = useState(0);
@@ -35,6 +42,7 @@ const Dashboard = () => {
       setSongs(appState?.songs ?? []);
       setArtists(appState?.artists ?? []);
       setAlbums(appState?.albums ?? []);
+      setPlaylists(appState?.playlists ?? []);
       setLoadError('');
       return;
     }
@@ -54,11 +62,15 @@ const Dashboard = () => {
           Promise.all([
             fetch(`${apiBaseUrl}/api/auth/top-tracks?token=${encodeURIComponent(tokenValue)}&range=${range}`),
             fetch(`${apiBaseUrl}/api/auth/top-artists?token=${encodeURIComponent(tokenValue)}&range=${range}`),
+            fetch(`${apiBaseUrl}/api/auth/playlists?token=${encodeURIComponent(tokenValue)}`),
           ]);
 
-        let [tracksResponse, artistsResponse] = await loadTopData(activeToken);
+        let [tracksResponse, artistsResponse, playlistsResponse] = await loadTopData(activeToken);
 
-        if ((tracksResponse.status === 401 || artistsResponse.status === 401) && refreshToken) {
+        if (
+          (tracksResponse.status === 401 || artistsResponse.status === 401 || playlistsResponse.status === 401) &&
+          refreshToken
+        ) {
           const refreshResponse = await fetch(
             `${apiBaseUrl}/api/auth/refresh-token?refreshToken=${encodeURIComponent(refreshToken)}`
           );
@@ -67,21 +79,26 @@ const Dashboard = () => {
             if (refreshed?.accessToken) {
               activeToken = refreshed.accessToken;
               updateAuthTokens(refreshed.accessToken, refreshed.refreshToken);
-              [tracksResponse, artistsResponse] = await loadTopData(activeToken);
+              [tracksResponse, artistsResponse, playlistsResponse] = await loadTopData(activeToken);
             }
           }
         }
 
-        if (!tracksResponse.ok || !artistsResponse.ok) {
+        if (!tracksResponse.ok || !artistsResponse.ok || !playlistsResponse.ok) {
           throw new Error('failed to load dashboard range');
         }
 
-        const [tracksData, artistsData] = await Promise.all([tracksResponse.json(), artistsResponse.json()]);
+        const [tracksData, artistsData, playlistsData] = await Promise.all([
+          tracksResponse.json(),
+          artistsResponse.json(),
+          playlistsResponse.json(),
+        ]);
 
         if (!cancelled) {
           setSongs(Array.isArray(tracksData) ? tracksData : []);
           setArtists(Array.isArray(artistsData) ? artistsData : []);
           setAlbums(calculateTopAlbums(Array.isArray(tracksData) ? tracksData : []));
+          setPlaylists(Array.isArray(playlistsData) ? playlistsData : []);
         }
       } catch (error) {
         if (!cancelled) {
@@ -135,12 +152,12 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="mx-auto max-w-[90vw] px-4 pb-10 md:px-8">
-      <main className="space-y-12">
+    <div className="w-full px-4 pb-10 md:px-8 xl:px-12">
+      <main className="mx-auto w-full max-w-[1420px] space-y-7">
         {loadError ? <p className="text-xs text-red-400">load error: {loadError}</p> : null}
 
-        <div className="flex flex-col items-start gap-10 lg:flex-row">
-          <section className="w-full rounded-2xl border border-white/5 bg-panel p-4 shadow-2xl lg:w-[35%]">
+        <div className="flex w-full flex-col items-stretch gap-8 xl:gap-10 lg:flex-row">
+          <section className="flex w-full flex-col rounded-2xl border border-white/5 bg-panel p-4 shadow-2xl lg:basis-[35%] lg:min-w-[23rem] lg:max-w-[34rem]">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xl font-bold tracking-tighter lowercase">top tracks</h2>
               <button
@@ -151,7 +168,14 @@ const Dashboard = () => {
                 make playlist
               </button>
             </div>
-            <div className="h-146.5 space-y-1 overflow-y-auto pr-2">
+
+            <div
+              className="flex flex-col overflow-y-auto pr-2"
+              style={{
+                height: TRACK_VIEWPORT_HEIGHT,
+                gap: TRACK_ROW_GAP,
+              }}
+            >
               {isLoading
                 ? [...Array(10)].map((_, index) => <SkeletonTrack key={index} />)
                 : songs.map((song, index) => (
@@ -159,21 +183,28 @@ const Dashboard = () => {
                       key={`${song.id ?? 'song'}-${index}`}
                       type="button"
                       onClick={() => handleRedirect('track', song.id, song.externalUrls?.spotify)}
-                      className="group flex w-full items-center gap-4 rounded-lg p-2 text-left transition-all duration-300 hover:bg-white/5"
+                      className="group flex w-full shrink-0 items-center gap-3 rounded-lg px-2 py-1 text-left transition-all duration-300 hover:bg-white/5"
+                      style={{ height: trackRowHeight }}
                     >
-                      <span className="w-4 text-[10px] font-mono text-zinc-700">{index + 1}</span>
-                      <img src={song.album?.images?.[0]?.url} className="h-10 w-10 shadow-md" alt="" />
-                      <div className="flex-1 truncate">
+                      <span className="w-4 shrink-0 text-[10px] font-mono text-zinc-700">{index + 1}</span>
+                      <img
+                        src={song.album?.images?.[0]?.url}
+                        className="h-9 w-9 shrink-0 shadow-md"
+                        alt=""
+                      />
+                      <div className="min-w-0 flex-1">
                         <h3 className="truncate text-sm font-bold group-hover:text-green-400">{song.name}</h3>
-                        <p className="truncate text-[11px] font-bold text-zinc-400">{song.artists?.[0]?.name}</p>
+                        <p className="truncate text-[11px] font-bold text-zinc-400">
+                          {song.artists?.[0]?.name}
+                        </p>
                       </div>
                     </button>
                   ))}
             </div>
           </section>
 
-          <div className="w-full flex-1 space-y-4 overflow-hidden">
-            <div className="fixed right-10 top-24 z-50" ref={switcherRef}>
+          <div className="w-full space-y-2 overflow-hidden lg:basis-[65%]">
+            <div className="fixed right-4 top-24 z-50" ref={switcherRef}>
               <button
                 type="button"
                 onClick={() => setShowMenu((prev) => !prev)}
@@ -219,7 +250,7 @@ const Dashboard = () => {
                 disablePrev={albumPage === 0}
                 disableNext={(albumPage + 1) * itemsPerPage >= albums.length}
               />
-              <div className="grid grid-cols-5 gap-4">
+              <div className="grid grid-cols-5 gap-3">
                 {isLoading
                   ? [...Array(5)].map((_, index) => <SkeletonAlbum key={index} />)
                   : getPage(albums, albumPage).map((album, index) => (
@@ -228,8 +259,9 @@ const Dashboard = () => {
                         type="button"
                         onClick={() => handleRedirect('album', album.id, album.externalUrls?.spotify)}
                         className="group flex flex-col text-left"
+                        style={{ width: RAIL_TILE_SIZE }}
                       >
-                        <div className="mb-2 aspect-square overflow-hidden bg-white/5 shadow-2xl">
+                        <div className="mb-2 overflow-hidden bg-white/5 shadow-2xl" style={{ width: RAIL_TILE_SIZE, height: RAIL_TILE_SIZE }}>
                           <img src={album.images?.[0]?.url} className="h-full w-full object-cover" alt="" />
                         </div>
                         <p className="truncate text-[10px] font-bold leading-tight text-zinc-300">{album.name}</p>
@@ -246,7 +278,7 @@ const Dashboard = () => {
                 disablePrev={artistPage === 0}
                 disableNext={(artistPage + 1) * itemsPerPage >= artists.length}
               />
-              <div className="grid grid-cols-5 gap-4">
+              <div className="grid grid-cols-5 gap-3">
                 {isLoading
                   ? [...Array(5)].map((_, index) => <SkeletonArtist key={index} />)
                   : getPage(artists, artistPage).map((artist, index) => (
@@ -255,8 +287,12 @@ const Dashboard = () => {
                         type="button"
                         onClick={() => handleRedirect('artist', artist.id, artist.externalUrls?.spotify)}
                         className="group flex flex-col items-center p-1 text-center"
+                        style={{ width: ARTIST_TILE_SIZE }}
                       >
-                        <div className="mb-4 aspect-square w-full overflow-hidden rounded-full border border-white/5 bg-white/5">
+                        <div
+                          className="mb-3 overflow-hidden rounded-full border border-white/5 bg-white/5"
+                          style={{ width: ARTIST_TILE_SIZE, height: ARTIST_TILE_SIZE }}
+                        >
                           <img src={artist.images?.[0]?.url} className="h-full w-full object-cover" alt="" />
                         </div>
                         <p className="w-full truncate text-[15px] font-bold text-zinc-300 group-hover:text-white">{artist.name}</p>
@@ -273,17 +309,20 @@ const Dashboard = () => {
                 disablePrev={playlistPage === 0}
                 disableNext={(playlistPage + 1) * itemsPerPage >= playlists.length}
               />
-              <div className="grid grid-cols-5 gap-4">
+              <div className="grid grid-cols-5 gap-3">
                 {isLoading
                   ? [...Array(5)].map((_, index) => <SkeletonPlaylist key={index} />)
                   : getPage(playlists, playlistPage).map((playlist, index) => (
                       <button
                         key={`${playlist.id ?? 'playlist'}-${playlistPage}-${index}`}
                         type="button"
-                        onClick={() => handleRedirect('playlist', playlist.id, playlist.externalUrls?.spotify)}
+                        onClick={() =>
+                          handleRedirect('playlist', playlist.id, playlist.externalUrls?.spotify ?? playlist.external_urls?.spotify)
+                        }
                         className="group flex flex-col text-left"
+                        style={{ width: RAIL_TILE_SIZE }}
                       >
-                        <div className="mb-2 aspect-square overflow-hidden bg-white/5 shadow-2xl">
+                        <div className="mb-2 overflow-hidden bg-white/5 shadow-2xl" style={{ width: RAIL_TILE_SIZE, height: RAIL_TILE_SIZE }}>
                           <img src={playlist.images?.[0]?.url} className="h-full w-full object-cover" alt="" />
                         </div>
                         <p className="truncate text-[13px] font-bold leading-tight text-zinc-300">{playlist.name}</p>
@@ -333,10 +372,13 @@ function PagerHeader({ title, onPrev, onNext, disablePrev, disableNext }) {
 
 function SkeletonTrack() {
   return (
-    <div className="flex items-center gap-4 p-2 animate-pulse">
+    <div
+      className="flex shrink-0 items-center gap-3 p-2 animate-pulse"
+      style={{ height: trackRowHeight }}
+    >
       <div className="h-3 w-4 rounded bg-white/5 text-[10px]" />
-      <div className="h-10 w-10 rounded bg-white/5 shadow-md" />
-      <div className="flex-1 space-y-2">
+      <div className="h-9 w-9 rounded bg-white/5 shadow-md" />
+      <div className="min-w-0 flex-1 space-y-2">
         <div className="h-3 w-3/4 rounded bg-white/10" />
         <div className="h-2 w-1/2 rounded bg-white/5" />
       </div>
@@ -347,7 +389,7 @@ function SkeletonTrack() {
 function SkeletonArtist() {
   return (
     <div className="flex flex-col items-center p-1 animate-pulse">
-      <div className="mb-4 aspect-square w-full rounded-full bg-white/5" />
+      <div className="mb-3 rounded-full bg-white/5" style={{ width: ARTIST_TILE_SIZE, height: ARTIST_TILE_SIZE }} />
       <div className="h-3 w-1/2 rounded bg-white/10" />
     </div>
   );
@@ -356,7 +398,7 @@ function SkeletonArtist() {
 function SkeletonAlbum() {
   return (
     <div className="flex flex-col animate-pulse">
-      <div className="mb-2 aspect-square w-full rounded-lg bg-white/5" />
+      <div className="mb-2 rounded-lg bg-white/5" style={{ width: RAIL_TILE_SIZE, height: RAIL_TILE_SIZE }} />
       <div className="mb-1 h-3 w-3/4 rounded bg-white/10" />
       <div className="h-2 w-1/2 rounded bg-white/5" />
     </div>
@@ -366,7 +408,7 @@ function SkeletonAlbum() {
 function SkeletonPlaylist() {
   return (
     <div className="flex flex-col animate-pulse">
-      <div className="mb-2 aspect-square w-full rounded-lg bg-white/5" />
+      <div className="mb-2 rounded-lg bg-white/5" style={{ width: RAIL_TILE_SIZE, height: RAIL_TILE_SIZE }} />
       <div className="mb-1 h-3 w-full rounded bg-white/10" />
       <div className="h-2 w-1/3 rounded bg-white/5" />
     </div>

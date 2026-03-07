@@ -22,7 +22,7 @@ function ProtectedLayout({ children }) {
   return (
     <div className="min-h-screen bg-black text-white">
       <Navbar />
-      <div className="pt-20">{children}</div>
+      <div className="pt-[4.5rem]">{children}</div>
     </div>
   );
 }
