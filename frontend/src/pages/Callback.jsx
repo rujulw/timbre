@@ -1,52 +1,77 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAppState } from '../state/appState.js';
+import { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Callback = () => {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { setHydratedState } = useAppState();
-  const [error, setError] = useState('');
+  const hasFetched = useRef(false);
 
   useEffect(() => {
-    let cancelled = false;
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
 
-    async function hydrateFromCallbackCode() {
-      const code = searchParams.get('code');
-      if (!code) {
-        setError('missing spotify oauth code');
-        return;
-      }
+    if (code && !hasFetched.current) {
+      hasFetched.current = true;
+      
+      console.log("Exchanging code for token...");
+      
+      fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/callback?code=${code}`)
+        .then(res => {
+          if (!res.ok) throw new Error("Backend failed");
+          return res.json();
+        })
+        .then(data => {
+            console.log("Success! Data received:", data);
+            // see if history actually exists here
+            console.log("History Count:", data.recentlyPlayed?.length || 0);
+            
+            
+            if (data.accessToken) {
+                localStorage.setItem('spotify_access_token', data.accessToken);
+            }
+            if (data.refreshToken) { 
+                localStorage.setItem('spotify_refresh_token', data.refreshToken);
+            } else {
+                console.warn("No refreshToken found. Auto-refresh will fail.");
+            }
 
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
-      const response = await fetch(`${apiBaseUrl}/api/auth/callback?code=${encodeURIComponent(code)}`);
-      if (!response.ok) {
-        throw new Error(`callback failed with status ${response.status}`);
-      }
 
-      const payload = await response.json();
-      if (!cancelled) {
-        setHydratedState(payload);
-        navigate('/dashboard', { replace: true });
-      }
+            // profile data
+            if (data.userImageUrl) {
+                localStorage.setItem('user_image', data.userImageUrl);
+                console.log("Saved Image:", data.userImageUrl);
+            }
+            if (data.profileUrl) {
+                localStorage.setItem('profile_url', data.profileUrl);
+                console.log("Saved Profile Link:", data.profileUrl);
+            }
+            if (data.displayName) {
+                localStorage.setItem('display_name', data.displayName);
+            }
+
+            navigate('/dashboard', { 
+                    state: { 
+                        songs: data.songs || [], 
+                        artists: data.artists || [], 
+                        recentlyPlayed: data.recentlyPlayed || [],
+                        albums: data.albums || [],
+                        playlists: data.playlists || [],
+                        currentlyPlaying: data.currentlyPlaying
+                    } 
+                });
+        })
+        .catch(err => {
+          console.error("Fetch error:", err);
+          navigate('/'); 
+        });
     }
-
-    hydrateFromCallbackCode().catch((err) => {
-      if (!cancelled) {
-        setError(err instanceof Error ? err.message : 'failed to hydrate state');
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [navigate, searchParams, setHydratedState]);
+  }, [navigate]);
 
   return (
-    <main>
-      <h1>authenticating...</h1>
-      {error ? <p>callback error: {error}</p> : <p>hydrating dashboard state...</p>}
-    </main>
+    <div className="min-h-screen flex items-center justify-center bg-black text-white">
+      <h1 className="text-2xl animate-pulse lowercase font-light tracking-widest">
+        authenticating...
+      </h1>
+    </div>
   );
 };
 

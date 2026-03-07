@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import Landing from './pages/Landing.jsx';
+import LandingPage from './pages/LandingPage.jsx';
 import Callback from './pages/Callback.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import { AppStateProvider } from './state/AppStateProvider.jsx';
@@ -31,7 +31,7 @@ function App() {
     <AppStateProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/callback" element={<Callback />} />
           <Route
             path="/dashboard"
