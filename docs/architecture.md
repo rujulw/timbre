@@ -32,6 +32,10 @@ Current frontend state model:
 - Callback route exchanges `code` via backend callback endpoint.
 - Hydration payload is stored in app-level context + localStorage persistence.
 - Dashboard route reads hydrated state from global context.
+- Dashboard supports time-range switching (`short_term`, `medium_term`, `long_term`) for top tracks/artists.
+- Dashboard uses loading skeleton states while range data is being fetched.
+- Protected layout wraps authenticated routes and applies consistent top navigation shell.
+- Route guards enforce authenticated access to dashboard/player/stats/settings paths.
 
 ### Backend (`backend`)
 Current responsibilities:

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAppState } from '../state/appState.js';
 
 const TIME_RANGES = [
@@ -8,7 +8,7 @@ const TIME_RANGES = [
 ];
 
 const Dashboard = () => {
-  const { appState, clearAppState } = useAppState();
+  const { appState } = useAppState();
   const [selectedRange, setSelectedRange] = useState('short_term');
   const [showMenu, setShowMenu] = useState(false);
   const [songs, setSongs] = useState(appState?.songs ?? []);
@@ -100,17 +100,6 @@ const Dashboard = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showMenu]);
 
-  const stats = useMemo(
-    () => ({
-      songs: songs.length,
-      artists: artists.length,
-      albums: albums.length,
-      playlists: playlists.length,
-      recentlyPlayed: appState?.recentlyPlayed?.length ?? 0,
-    }),
-    [albums.length, appState?.recentlyPlayed?.length, artists.length, playlists.length, songs.length]
-  );
-
   const getPage = (list, page) => list.slice(page * itemsPerPage, (page + 1) * itemsPerPage);
 
   const handleRedirect = (type, id, webUrl) => {
@@ -128,10 +117,6 @@ const Dashboard = () => {
   return (
     <div className="mx-auto max-w-[90vw] px-4 pb-10 md:px-8">
       <main className="space-y-12">
-        <p className="text-sm text-zinc-400">
-          signed in as {appState?.user?.displayName ?? appState?.spotifyId ?? 'unknown user'}
-        </p>
-
         {loadError ? <p className="text-xs text-red-400">load error: {loadError}</p> : null}
 
         <div className="flex flex-col items-start gap-10 lg:flex-row">
@@ -151,7 +136,7 @@ const Dashboard = () => {
                 ? [...Array(10)].map((_, index) => <SkeletonTrack key={index} />)
                 : songs.map((song, index) => (
                     <button
-                      key={song.id ?? `${song.name}-${index}`}
+                      key={`${song.id ?? 'song'}-${index}`}
                       type="button"
                       onClick={() => handleRedirect('track', song.id, song.externalUrls?.spotify)}
                       className="group flex w-full items-center gap-4 rounded-lg p-2 text-left transition-all duration-300 hover:bg-white/5"
@@ -217,9 +202,9 @@ const Dashboard = () => {
               <div className="grid grid-cols-5 gap-4">
                 {isLoading
                   ? [...Array(5)].map((_, index) => <SkeletonAlbum key={index} />)
-                  : getPage(albums, albumPage).map((album) => (
+                  : getPage(albums, albumPage).map((album, index) => (
                       <button
-                        key={album.id}
+                        key={`${album.id ?? 'album'}-${albumPage}-${index}`}
                         type="button"
                         onClick={() => handleRedirect('album', album.id, album.externalUrls?.spotify)}
                         className="group flex flex-col text-left"
@@ -244,9 +229,9 @@ const Dashboard = () => {
               <div className="grid grid-cols-5 gap-4">
                 {isLoading
                   ? [...Array(5)].map((_, index) => <SkeletonArtist key={index} />)
-                  : getPage(artists, artistPage).map((artist) => (
+                  : getPage(artists, artistPage).map((artist, index) => (
                       <button
-                        key={artist.id}
+                        key={`${artist.id ?? 'artist'}-${artistPage}-${index}`}
                         type="button"
                         onClick={() => handleRedirect('artist', artist.id, artist.externalUrls?.spotify)}
                         className="group flex flex-col items-center p-1 text-center"
@@ -271,9 +256,9 @@ const Dashboard = () => {
               <div className="grid grid-cols-5 gap-4">
                 {isLoading
                   ? [...Array(5)].map((_, index) => <SkeletonPlaylist key={index} />)
-                  : getPage(playlists, playlistPage).map((playlist) => (
+                  : getPage(playlists, playlistPage).map((playlist, index) => (
                       <button
-                        key={playlist.id}
+                        key={`${playlist.id ?? 'playlist'}-${playlistPage}-${index}`}
                         type="button"
                         onClick={() => handleRedirect('playlist', playlist.id, playlist.externalUrls?.spotify)}
                         className="group flex flex-col text-left"
@@ -290,17 +275,6 @@ const Dashboard = () => {
               </div>
             </section>
           </div>
-        </div>
-
-        <div className="flex items-center gap-6 text-xs uppercase tracking-[0.15em] text-zinc-500">
-          <span>songs {stats.songs}</span>
-          <span>artists {stats.artists}</span>
-          <span>albums {stats.albums}</span>
-          <span>playlists {stats.playlists}</span>
-          <span>recent {stats.recentlyPlayed}</span>
-          <button type="button" className="rounded-full border border-white/10 px-3 py-1 text-white/40" onClick={clearAppState}>
-            clear session
-          </button>
         </div>
       </main>
     </div>

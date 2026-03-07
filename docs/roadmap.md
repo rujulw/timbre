@@ -25,8 +25,8 @@ Build timbre in a clean, showcaseable, industry-standard GitHub Flow, using the 
 - [x] Top tracks/artists/recent endpoints
 - [x] Aggregated hydration payload
 - [x] Frontend callback hydration + global state bootstrap
-- [ ] Dashboard overview + range switcher
-- [ ] Routing/state guard stabilization
+- [x] Dashboard overview + range switcher
+- [x] Routing/state guard stabilization
 
 ## Milestone 4 — Player Experience
 - [ ] Live currently playing endpoint + refresh fallback
