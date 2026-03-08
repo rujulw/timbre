@@ -19,6 +19,8 @@ const Dashboard = () => {
   const { appState, updateAuthTokens } = useAppState();
   const [selectedRange, setSelectedRange] = useState('short_term');
   const [showMenu, setShowMenu] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [toast, setToast] = useState({ show: false, message: '' });
   const [songs, setSongs] = useState(appState?.songs ?? []);
   const [artists, setArtists] = useState(appState?.artists ?? []);
   const [albums, setAlbums] = useState(appState?.albums ?? []);
@@ -140,6 +142,78 @@ const Dashboard = () => {
 
   const getPage = (list, page) => list?.slice(page * itemsPerPage, (page + 1) * itemsPerPage) || [];
 
+  const triggerToast = (message) => {
+    setToast({ show: true, message });
+    window.setTimeout(() => setToast({ show: false, message: '' }), 3000);
+  };
+
+  const buildSnapshotName = (range) => {
+    const now = new Date();
+    const yearShort = now.getFullYear().toString().slice(-2);
+
+    if (range === 'short_term') {
+      const monthFull = now.toLocaleString('default', { month: 'long' }).toLowerCase();
+      return `${monthFull} '${yearShort}`;
+    }
+
+    if (range === 'medium_term') {
+      const pastDate = new Date();
+      pastDate.setMonth(now.getMonth() - 5);
+      const startMonth = pastDate.toLocaleString('default', { month: 'short' }).toLowerCase();
+      const endMonth = now.toLocaleString('default', { month: 'short' }).toLowerCase();
+      const startYear = pastDate.getFullYear().toString().slice(-2);
+      const yearLabel = startYear === yearShort ? `'${yearShort}` : `'${startYear} - '${yearShort}`;
+      return `${startMonth} - ${endMonth} ${yearLabel}`;
+    }
+
+    return 'all time favs';
+  };
+
+  const handleCreateSnapshot = async () => {
+    if (isCreating || !songs?.length) {
+      return;
+    }
+
+    const accessToken = appState?.accessToken ?? window.localStorage.getItem('spotify_access_token');
+    if (!accessToken) {
+      triggerToast('missing spotify session');
+      return;
+    }
+
+    setIsCreating(true);
+
+    try {
+      const apiBaseUrl = getApiBaseUrl();
+      const payload = {
+        name: buildSnapshotName(selectedRange),
+        uris: songs
+          .map((song) => song?.id ?? song?.spotifyId ?? null)
+          .filter(Boolean)
+          .map((id) => (id.startsWith('spotify:track:') ? id : `spotify:track:${id}`)),
+      };
+
+      const response = await fetch(
+        `${apiBaseUrl}/api/auth/create-snapshot?token=${encodeURIComponent(accessToken)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('snapshot_create_failed');
+      }
+
+      triggerToast('playlist created successfully');
+    } catch (error) {
+      console.error('Snapshot creation failed:', error);
+      triggerToast('failed to create playlist');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   const handleRedirect = (type, id, webUrl) => {
     if (!id) {
       return;
@@ -163,10 +237,11 @@ const Dashboard = () => {
               <h2 className="text-xl font-bold tracking-tighter lowercase">top tracks</h2>
               <button
                 type="button"
-                className="h-7 rounded-full border border-white/10 px-3 py-1 text-[10px] font-medium lowercase tracking-widest text-white/30"
-                disabled
+                onClick={handleCreateSnapshot}
+                disabled={isCreating || !songs?.length}
+                className="h-7 rounded-full border border-white/10 px-3 py-1 text-[10px] font-medium lowercase tracking-widest text-white/40 transition-all duration-300 hover:border-white/30 hover:bg-white/5 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                make playlist
+                {isCreating ? 'creating...' : 'make playlist'}
               </button>
             </div>
 
@@ -356,6 +431,14 @@ const Dashboard = () => {
           </div>
         </div>
       </main>
+      <div className={`fixed bottom-8 left-1/2 z-50 -translate-x-1/2 transform transition-all duration-500 ${
+        toast.show ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0 pointer-events-none'
+      }`}>
+        <div className="flex items-center gap-3 rounded-full border border-white/10 bg-[#1a1a1a] px-6 py-2 shadow-2xl backdrop-blur-md">
+          <div className="h-1.5 w-1.5 rounded-full bg-white/40 animate-pulse" />
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/70">{toast.message}</p>
+        </div>
+      </div>
     </div>
   );
 };
