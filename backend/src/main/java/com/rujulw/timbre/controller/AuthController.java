@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,6 +32,7 @@ import org.springframework.web.servlet.view.RedirectView;
 public class AuthController {
 
     private static final String RESPONSE_TYPE = "code";
+    public record PlaylistRequest(String name, List<String> uris) { }
 
     private final SpotifyProperties spotifyProperties;
     private final SpotifyAuthService spotifyAuthService;
@@ -147,6 +150,15 @@ public class AuthController {
                 "refreshToken", resolvedRefreshToken,
                 "expiresIn", refreshed.getExpiresIn()
         ));
+    }
+
+    @PostMapping("/create-snapshot")
+    public ResponseEntity<Map<String, Object>> createSnapshot(
+            @RequestParam String token,
+            @RequestBody PlaylistRequest payload
+    ) {
+        Map<String, Object> result = spotifyAuthService.createSnapshotPlaylist(token, payload.name(), payload.uris());
+        return ResponseEntity.ok(result);
     }
 
     private List<SpotifyTrackDTO.Album> calculateTopAlbums(List<SpotifyTrackDTO> topTracks) {

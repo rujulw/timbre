@@ -10,6 +10,7 @@ import com.rujulw.timbre.dto.SpotifyTokenResponse;
 import com.rujulw.timbre.dto.SpotifyUserDTO;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
@@ -174,5 +175,62 @@ public class SpotifyAuthService {
                 .body(new ParameterizedTypeReference<Map<String, Object>>() { });
 
         return response != null ? response : Map.of("is_playing", false);
+    }
+
+    public Map<String, Object> createSnapshotPlaylist(String token, String name, List<String> trackUris) {
+        try {
+            Map<String, Object> profile = restClient.get()
+                    .uri(spotifyProperties.apiBaseUrl() + "/me")
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<Map<String, Object>>() { });
+
+            String userId = profile != null ? (String) profile.get("id") : null;
+            if (userId == null || userId.isBlank()) {
+                return Map.of("success", false, "error", "missing_user_id");
+            }
+
+            Map<String, Object> playlistBody = Map.of(
+                    "name", name,
+                    "description", "Timbre. Audio Snapshot",
+                    "public", false
+            );
+
+            Map<String, Object> playlist = restClient.post()
+                    .uri(spotifyProperties.apiBaseUrl() + "/users/" + userId + "/playlists")
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(playlistBody)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<Map<String, Object>>() { });
+
+            String playlistId = playlist != null ? (String) playlist.get("id") : null;
+            if (playlistId == null || playlistId.isBlank()) {
+                return Map.of("success", false, "error", "missing_playlist_id");
+            }
+
+            List<String> formattedUris = (trackUris == null ? List.<String>of() : trackUris).stream()
+                    .filter(uri -> uri != null)
+                    .map(uri -> uri.startsWith("spotify:track:") ? uri : "spotify:track:" + uri)
+                    .collect(Collectors.toList());
+
+            if (formattedUris.isEmpty()) {
+                return playlist;
+            }
+
+            Map<String, Object> tracksBody = Map.of("uris", formattedUris);
+
+            Map<String, Object> addResponse = restClient.post()
+                    .uri(spotifyProperties.apiBaseUrl() + "/playlists/" + playlistId + "/tracks")
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(tracksBody)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<Map<String, Object>>() { });
+
+            return addResponse != null ? addResponse : Map.of();
+        } catch (Exception e) {
+            return Map.of("success", false, "error", e.getMessage());
+        }
     }
 }

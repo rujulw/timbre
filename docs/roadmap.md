@@ -37,11 +37,11 @@ Build timbre in a clean, showcaseable, industry-standard GitHub Flow, using the 
 - [x] Routing/state guard stabilization
 
 ## Milestone 4 — Player Experience
-- [x] Live currently playing endpoint + refresh fallback (Commit 16)
-- [x] Global polling and session history behavior (Commit 17)
-- [x] Player page and vinyl interaction design (Commit 18)
-- [x] Navbar/session shell on protected routes (Commit 19)
-- [x] Frontend tests for player + routing behavior (Commit 20)
+- [x] Live currently playing endpoint + refresh fallback
+- [x] Global polling and session history behavior
+- [x] Player page and vinyl interaction design
+- [x] Navbar/session shell on protected routes
+- [x] Frontend tests for player + routing behavior
 
 ## Milestone 5 — Snapshot + Release
 - [ ] Playlist snapshot backend endpoint

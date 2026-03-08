@@ -155,4 +155,46 @@ class SpotifyAuthServiceTest {
         assertEquals("new-access-1", response.get("newAccessToken"));
         server.verify();
     }
+
+    @Test
+    void createSnapshotPlaylist_normalizesTrackUrisAndAddsTracks() {
+        server.expect(requestTo("https://api.spotify.com/v1/me"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer token-xyz"))
+                .andRespond(withSuccess("""
+                        {
+                          "id": "user-1"
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        server.expect(requestTo("https://api.spotify.com/v1/users/user-1/playlists"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer token-xyz"))
+                .andExpect(content().string(containsString("\"name\":\"snapshot 4w\"")))
+                .andRespond(withSuccess("""
+                        {
+                          "id": "playlist-1"
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        server.expect(requestTo("https://api.spotify.com/v1/playlists/playlist-1/tracks"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer token-xyz"))
+                .andExpect(content().string(containsString("spotify:track:abc")))
+                .andExpect(content().string(containsString("spotify:track:def")))
+                .andRespond(withSuccess("""
+                        {
+                          "snapshot_id": "snapshot-123"
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        Map<String, Object> response = spotifyAuthService.createSnapshotPlaylist(
+                "token-xyz",
+                "snapshot 4w",
+                List.of("abc", "spotify:track:def")
+        );
+
+        assertEquals("snapshot-123", response.get("snapshot_id"));
+        server.verify();
+    }
 }
