@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAppState } from '../state/appState.js';
 import { getApiBaseUrl } from '../lib/apiBaseUrl.js';
+import { getSpotifyTrackUri, normalizeTrack, resolveTrackSource } from '../lib/trackCompat.js';
 
 const TIME_RANGES = [
   { value: 'short_term', label: '4 Weeks' },
@@ -187,10 +188,14 @@ const Dashboard = () => {
       const payload = {
         name: buildSnapshotName(selectedRange),
         uris: songs
-          .map((song) => song?.id ?? song?.spotifyId ?? null)
+          .map((song) => getSpotifyTrackUri(song))
           .filter(Boolean)
-          .map((id) => (id.startsWith('spotify:track:') ? id : `spotify:track:${id}`)),
       };
+
+      if (!payload.uris.length) {
+        triggerToast('no spotify tracks in selection');
+        return;
+      }
 
       const response = await fetch(
         `${apiBaseUrl}/api/auth/create-snapshot?token=${encodeURIComponent(accessToken)}`,
@@ -214,11 +219,22 @@ const Dashboard = () => {
     }
   };
 
-  const handleRedirect = (type, id, webUrl) => {
-    if (!id) {
+  const handleRedirect = (type, id, webUrl, source = 'spotify') => {
+    const isLocalTrack = type === 'track' && source === 'local';
+
+    if (isLocalTrack) {
+      triggerToast('local files do not support spotify deep links');
       return;
     }
-    window.location.href = `spotify:${type}:${id}`;
+
+    if (!id && !webUrl) {
+      return;
+    }
+
+    if (id) {
+      window.location.href = `spotify:${type}:${id}`;
+    }
+
     setTimeout(() => {
       if (document.hasFocus() && webUrl) {
         window.open(webUrl, '_blank');
@@ -254,28 +270,32 @@ const Dashboard = () => {
             >
               {isLoading
                 ? [...Array(10)].map((_, index) => <SkeletonTrack key={index} />)
-                : songs.map((song, index) => (
+                : songs.map((song, index) => {
+                    const normalizedSong = normalizeTrack(song);
+                    const trackSource = resolveTrackSource(song);
+                    return (
                     <button
                       key={`${song.id ?? 'song'}-${index}`}
                       type="button"
-                      onClick={() => handleRedirect('track', song.id, song.externalUrls?.spotify)}
+                      onClick={() => handleRedirect('track', normalizedSong.id, normalizedSong.externalUrls?.spotify, trackSource)}
                       className="group flex w-full shrink-0 items-center gap-3 rounded-lg px-2 py-1 text-left transition-all duration-300 hover:bg-white/5 cursor-pointer"
                       style={{ height: trackRowHeight }}
                     >
                       <span className="w-4 shrink-0 text-[10px] font-mono text-zinc-700">{index + 1}</span>
                       <img
-                        src={song.album?.images?.[0]?.url}
+                        src={normalizedSong.album?.images?.[0]?.url}
                         className="h-9 w-9 shrink-0 shadow-md"
                         alt=""
                       />
                       <div className="min-w-0 flex-1">
-                        <h3 className="truncate text-sm font-bold group-hover:text-green-400">{song.name}</h3>
+                        <h3 className="truncate text-sm font-bold group-hover:text-green-400">{normalizedSong.name}</h3>
                         <p className="truncate text-[11px] font-bold text-zinc-400">
-                          {song.artists?.[0]?.name}
+                          {normalizedSong.artists?.[0]?.name}
                         </p>
                       </div>
                     </button>
-                  ))}
+                    );
+                  })}
             </div>
           </section>
 

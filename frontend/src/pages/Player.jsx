@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ColorExtractor } from 'react-color-extractor';
 import { useAppState } from '../state/appState.js';
 import VinylDisplay from '../components/VinylDisplay.jsx';
+import { normalizeTrack, resolveTrackSource } from '../lib/trackCompat.js';
 
 const Player = () => {
   const { appState } = useAppState();
@@ -9,10 +10,11 @@ const Player = () => {
 
   const liveHistory = Array.isArray(appState?.liveHistory) ? appState.liveHistory : [];
   const activeTrack = appState?.activeTrack ?? null;
-  const currentTrack = activeTrack?.track || activeTrack;
+  const currentTrack = normalizeTrack(activeTrack?.track || activeTrack);
+  const currentTrackSource = resolveTrackSource(currentTrack);
   const currentId = currentTrack?.id;
   const currentUrl = currentTrack?.externalUrls?.spotify ?? currentTrack?.external_urls?.spotify;
-  const currentTrackArt = (activeTrack?.track?.album || activeTrack?.album)?.images?.[0]?.url;
+  const currentTrackArt = currentTrack?.album?.images?.[0]?.url;
   const isPlaying = activeTrack?.isPlaying === true;
   const resolvedAccentColor = accentColor ?? 'rgba(255,255,255,0.72)';
   const [motionTick, setMotionTick] = useState(0);
@@ -82,11 +84,19 @@ const Player = () => {
     return `${Math.floor(diffInMinutes / 60)}h ago`;
   };
 
-  const handleRedirect = (type, id, webUrl) => {
-    if (!id) {
+  const handleRedirect = (type, id, webUrl, source = 'spotify') => {
+    if (type === 'track' && source === 'local') {
       return;
     }
-    window.location.href = `spotify:${type}:${id}`;
+
+    if (!id && !webUrl) {
+      return;
+    }
+
+    if (id) {
+      window.location.href = `spotify:${type}:${id}`;
+    }
+
     setTimeout(() => {
       if (document.hasFocus() && webUrl) {
         window.open(webUrl, '_blank');
@@ -126,7 +136,7 @@ const Player = () => {
         <div className="relative overflow-hidden rounded-[clamp(1.5rem,3vw,2rem)] border border-white/5 bg-panel p-[clamp(1.25rem,2.4vw,2rem)] shadow-2xl lg:min-h-0">
           <div className="mb-[clamp(1.5rem,2.6vw,2.5rem)] flex items-center gap-[clamp(1rem,2vw,1.5rem)]">
             <div className="group relative">
-              <div onClick={() => handleRedirect('track', currentId, currentUrl)}>
+              <div onClick={() => handleRedirect('track', currentId, currentUrl, currentTrackSource)}>
                 <img
                   src={currentTrackArt}
                   className="h-[clamp(4.25rem,8vw,6rem)] w-[clamp(4.25rem,8vw,6rem)] cursor-pointer shadow-2xl transition-transform duration-500 group-hover:scale-105"
@@ -147,10 +157,10 @@ const Player = () => {
                 currently playing
               </h2>
               <h3 className="mb-1 truncate text-[clamp(1.25rem,2.2vw,1.5rem)] leading-none font-black tracking-tighter">
-                {activeTrack?.track?.name || activeTrack?.name || 'nothing playing'}
+                {currentTrack?.name || 'nothing playing'}
               </h3>
               <p className="truncate text-sm font-bold text-white/40">
-                {(activeTrack?.track?.artists || activeTrack?.artists)?.[0]?.name || '- -'}
+                {currentTrack?.artists?.[0]?.name || '- -'}
               </p>
             </div>
           </div>
@@ -190,15 +200,16 @@ const Player = () => {
           <h2 className="mb-1 text-xl font-bold tracking-tighter lowercase">recently played</h2>
           <div className="custom-scroll flex-1 space-y-1 overflow-y-auto pr-2">
             {liveHistory.slice(1).map((item, i) => {
-              const trackData = item.track || item;
+              const trackData = normalizeTrack(item.track || item);
               const trackId = trackData?.id;
               const trackUrl = trackData?.externalUrls?.spotify ?? trackData?.external_urls?.spotify;
+              const trackSource = resolveTrackSource(trackData);
               return (
                 <div
                   key={`${trackId}-${i}`}
-                  onClick={() => handleRedirect('track', trackId, trackUrl)}
+                  onClick={() => handleRedirect('track', trackId, trackUrl, trackSource)}
                   className={`group flex cursor-pointer items-center gap-3 rounded-xl p-3 transition-all ${
-                    activeTrack?.track?.id === trackData?.id ? 'bg-white/10' : 'hover:bg-white/5'
+                    currentTrack?.id === trackData?.id ? 'bg-white/10' : 'hover:bg-white/5'
                   }`}
                 >
                   <img src={trackData?.album?.images?.[0]?.url} className="h-12 w-12 shadow-md transition-all duration-500" alt="" />

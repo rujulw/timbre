@@ -10,6 +10,7 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 import ProtectedLayout from './components/ProtectedLayout.jsx';
 import UnderConstruction from './components/UnderConstruction.jsx';
 import { getApiBaseUrl } from './lib/apiBaseUrl.js';
+import { getTrackIdentity, normalizeTrack } from './lib/trackCompat.js';
 
 export function GlobalPlaybackPoller() {
   const { appState, updateAuthTokens, updateAppState } = useAppState();
@@ -60,24 +61,27 @@ export function GlobalPlaybackPoller() {
           let nextCurrentlyPlaying = prev.currentlyPlaying ?? null;
 
           if (live && live.item) {
+            const normalizedLiveTrack = normalizeTrack(live.item);
+            const currentTrackKey = getTrackIdentity(normalizedLiveTrack);
             const isPlaying = live.is_playing ?? live.isPlaying ?? false;
-            const isNewTrack = live.item.id !== previousActiveTrack?.track?.id;
+            const previousTrackKey = getTrackIdentity(previousActiveTrack?.track);
+            const isNewTrack = currentTrackKey !== previousTrackKey;
             const isPlayStatusChange = isPlaying !== previousActiveTrack?.isPlaying;
 
             if (isNewTrack || isPlayStatusChange) {
-              nextActiveTrack = { track: live.item, isPlaying };
+              nextActiveTrack = { track: normalizedLiveTrack, isPlaying };
             }
 
-            const firstTrackId = previousHistory[0]?.track?.id ?? previousHistory[0]?.id ?? null;
-            if (firstTrackId !== live.item.id) {
+            const firstTrackKey = getTrackIdentity(previousHistory[0]?.track ?? previousHistory[0]);
+            if (firstTrackKey !== currentTrackKey) {
               const deDuplicatedHistory = previousHistory.filter((entry) => {
-                const entryId = entry?.track?.id ?? entry?.id ?? null;
-                return entryId !== live.item.id;
+                const entryKey = getTrackIdentity(entry?.track ?? entry);
+                return entryKey !== currentTrackKey;
               });
-              nextHistory = [{ track: live.item, played_at: new Date().toISOString() }, ...deDuplicatedHistory].slice(0, 20);
+              nextHistory = [{ track: normalizedLiveTrack, played_at: new Date().toISOString() }, ...deDuplicatedHistory].slice(0, 20);
             }
 
-            nextCurrentlyPlaying = live;
+            nextCurrentlyPlaying = { ...live, item: normalizedLiveTrack };
           } else {
             const wasPlaying = previousActiveTrack?.isPlaying ?? false;
             if (wasPlaying && previousActiveTrack?.track) {

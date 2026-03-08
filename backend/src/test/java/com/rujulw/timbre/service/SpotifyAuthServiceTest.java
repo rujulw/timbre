@@ -1,6 +1,7 @@
 package com.rujulw.timbre.service;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
@@ -182,6 +183,7 @@ class SpotifyAuthServiceTest {
                 .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer token-xyz"))
                 .andExpect(content().string(containsString("spotify:track:abc")))
                 .andExpect(content().string(containsString("spotify:track:def")))
+                .andExpect(content().string(not(containsString("spotify:local:Artist:Album:Title"))))
                 .andRespond(withSuccess("""
                         {
                           "snapshot_id": "snapshot-123"
@@ -191,7 +193,7 @@ class SpotifyAuthServiceTest {
         Map<String, Object> response = spotifyAuthService.createSnapshotPlaylist(
                 "token-xyz",
                 "snapshot 4w",
-                List.of("abc", "spotify:track:def")
+                List.of("abc", "spotify:track:def", "spotify:local:Artist:Album:Title")
         );
 
         assertEquals("snapshot-123", response.get("snapshot_id"));

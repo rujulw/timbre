@@ -11,8 +11,8 @@ Current model:
 - Spotify is treated as an external integration owned by backend.
 
 ## Current Delivery Stage (As Of 2026-03-07)
-- Active branch track: `feat/make-playlist`.
-- Commit position: moving into local-file compatibility safety and final release polish.
+- Active branch track: `feat/local-files`.
+- Commit position: local-file compatibility placeholder landed; moving into final release polish.
 - Execution pattern from this point:
 - Use `old-backend/` and `old-frontend/` as behavior references.
 - Re-implement in `backend/` and `frontend/` with clean boundaries.
@@ -50,6 +50,8 @@ Current frontend state model:
 - Player route now renders vinyl deck + currently-playing card + session history rail.
 - Player layout preserves old-frontend 60/40 deck-to-info ratio while using responsive clamp-based sizing to avoid fixed-screen assumptions.
 - Dashboard make-playlist action now calls backend snapshot endpoint with contextual range-based naming.
+- Dashboard snapshot URI payload now filters out local-file tracks and keeps only valid Spotify track URIs.
+- Player and poller normalize live track objects (including local sources) with null-safe fallback metadata.
 - Frontend integration tests now cover snapshot creation flow and range-switch fetch behavior.
 
 ### Backend (`backend`)
@@ -59,10 +61,11 @@ Current responsibilities:
 - User identity/token metadata sync to PostgreSQL.
 - Spotify analytics endpoints for top tracks, top artists, and recently played.
 - Snapshot playlist creation endpoint with Spotify track URI normalization.
+- Snapshot playlist creation endpoint now ignores unsupported local/non-track Spotify URIs.
 - Safe translation of Spotify payloads to frontend-ready DTOs.
 
-Commit-16 in-progress responsibility:
-- Add `/api/auth/currently-playing` endpoint behavior aligned to old backend:
+Live playback endpoint behavior:
+- `/api/auth/currently-playing` remains aligned to old backend:
 - Primary fetch against Spotify currently-playing API.
 - Token refresh fallback on unauthorized/expired token paths.
 - Normalized response payload for frontend polling consumers.
@@ -72,6 +75,7 @@ Future responsibilities:
 - Broader persistence model for historical analytics.
 - More robust error normalization and observability.
 - Local-file compatibility layer for tracks without Spotify-resolvable metadata.
+- Local-file placeholder contract now uses source-aware fallback behavior (`source=local`) to prevent null-path crashes.
 
 ## Session Lifecycle
 1. User lands on frontend and starts OAuth.
@@ -97,7 +101,7 @@ Current implemented backend layers:
 - `dto`: `SpotifyTokenResponse`, `SpotifyUserDTO`
 
 ## Naming and Conventions
-- Branch naming: `feat-<branch-name>`.
+- Branch naming: `feat/<branch-name>`.
 - Commit prefixes: `[impl]`, `[test]`, `[design]`, `[debug]`.
 - Keep PRs small and scoped to 5-commit slices from `commits.txt`.
 - Use clear layer naming:

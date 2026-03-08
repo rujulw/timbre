@@ -55,10 +55,12 @@ describe('GlobalPlaybackPoller', () => {
     const updater = updateAppState.mock.calls[0][0];
     const nextState = updater({ liveHistory: [], currentlyPlaying: null, activeTrack: null });
 
-    expect(nextState.activeTrack).toEqual({
-      track: { id: 'track-123', name: 'Track 123' },
-      isPlaying: true,
-    });
+    expect(nextState.activeTrack).toEqual(
+      expect.objectContaining({
+        track: expect.objectContaining({ id: 'track-123', name: 'Track 123' }),
+        isPlaying: true,
+      })
+    );
     expect(nextState.liveHistory[0].track.id).toBe('track-123');
     expect(nextState.currentlyPlaying.item.id).toBe('track-123');
   });
