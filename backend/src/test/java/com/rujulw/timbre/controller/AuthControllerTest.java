@@ -3,6 +3,8 @@ package com.rujulw.timbre.controller;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -24,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -162,5 +165,28 @@ class AuthControllerTest {
                         .param("token", "token-abc"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isPlaying").value(false));
+    }
+
+    @Test
+    void createSnapshot_forwardsPayloadAndReturnsServiceResponse() throws Exception {
+        when(spotifyAuthService.createSnapshotPlaylist(
+                "token-abc",
+                "my snapshot",
+                List.of("track-1", "spotify:track:track-2")
+        )).thenReturn(Map.of("snapshot_id", "snap-123"));
+
+        mockMvc.perform(post("/api/auth/create-snapshot")
+                        .param("token", "token-abc")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "my snapshot",
+                                  "uris": ["track-1", "spotify:track:track-2"]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(content().json("""
+                        {"snapshot_id":"snap-123"}
+                        """));
     }
 }

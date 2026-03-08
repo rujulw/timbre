@@ -34,3 +34,11 @@ Hydrated state mirrors backend callback payload, including:
 - Added protected layout shell with top navigation component.
 - Added route guards for `/dashboard`, `/player`, `/stats`, and `/settings`.
 - Added placeholder pages for protected routes not fully implemented yet to preserve navigation continuity.
+
+## API Base Consistency And Snapshot Integration
+- Frontend API calls are resolved through a single base-url resolver (`getApiBaseUrl`) with env override first and same-origin fallback.
+- Dashboard "make playlist" action now posts current top-track URIs to `/api/auth/create-snapshot`.
+- Snapshot naming is contextual to active range:
+- short term: current month format
+- medium term: rolling multi-month label
+- long term: all-time label

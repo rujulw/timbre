@@ -11,8 +11,8 @@ Current model:
 - Spotify is treated as an external integration owned by backend.
 
 ## Current Delivery Stage (As Of 2026-03-07)
-- Active branch track: `feat-player-experience`.
-- Commit position: **Commit 20** (`[test] add frontend tests for polling logic, route protection, and player rendering`).
+- Active branch track: `feat/make-playlist`.
+- Commit position: moving into local-file compatibility safety and final release polish.
 - Execution pattern from this point:
 - Use `old-backend/` and `old-frontend/` as behavior references.
 - Re-implement in `backend/` and `frontend/` with clean boundaries.
@@ -49,6 +49,8 @@ Current frontend state model:
 - Poller updates `activeTrack`, `currentlyPlaying`, and deduped `liveHistory` in app state.
 - Player route now renders vinyl deck + currently-playing card + session history rail.
 - Player layout preserves old-frontend 60/40 deck-to-info ratio while using responsive clamp-based sizing to avoid fixed-screen assumptions.
+- Dashboard make-playlist action now calls backend snapshot endpoint with contextual range-based naming.
+- Frontend integration tests now cover snapshot creation flow and range-switch fetch behavior.
 
 ### Backend (`backend`)
 Current responsibilities:
@@ -56,6 +58,7 @@ Current responsibilities:
 - Spotify token exchange + profile retrieval.
 - User identity/token metadata sync to PostgreSQL.
 - Spotify analytics endpoints for top tracks, top artists, and recently played.
+- Snapshot playlist creation endpoint with Spotify track URI normalization.
 - Safe translation of Spotify payloads to frontend-ready DTOs.
 
 Commit-16 in-progress responsibility:
@@ -68,6 +71,7 @@ Future responsibilities:
 - Security hardening and access controls.
 - Broader persistence model for historical analytics.
 - More robust error normalization and observability.
+- Local-file compatibility layer for tracks without Spotify-resolvable metadata.
 
 ## Session Lifecycle
 1. User lands on frontend and starts OAuth.
@@ -86,7 +90,7 @@ Future responsibilities:
 - Spotify DTOs: API boundary objects only (not persistence entities).
 
 Current implemented backend layers:
-- `controller`: `AuthController` (`/api/auth/login`, `/api/auth/callback`, `/api/auth/refresh-token`, `/api/auth/currently-playing`)
+- `controller`: `AuthController` (`/api/auth/login`, `/api/auth/callback`, `/api/auth/refresh-token`, `/api/auth/currently-playing`, `/api/auth/create-snapshot`)
 - `service`: `SpotifyAuthService`, `UserService`
 - `repository`: `UserRepository`
 - `model`: `User` (`app_users` table)
@@ -102,11 +106,12 @@ Current implemented backend layers:
 - Reference-first workflow for commits 16+:
 - Read old implementation in `old-backend/` and `old-frontend/`.
 - Port behavior with minimal divergence.
-- Validate each commit with tests/build before advancing.
+- Validate each scoped change with tests/build before advancing.
 
 ## Known Gaps
 - Initial phase prioritizes rebuild velocity over full hardening.
 - E2E coverage is not baseline yet.
+- Spotify Web API does not expose full desktop-local-file metadata paths, so local-file handling must rely on app-side placeholders and null-safe contracts.
 - Auth happy-path coverage now includes:
 - Service tests for token exchange and profile fetch behavior.
 - Controller tests for login redirect and callback payload contract.

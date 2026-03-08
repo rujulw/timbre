@@ -4,8 +4,8 @@ export function getApiBaseUrl() {
     return configured.replace(/\/$/, '');
   }
 
-  if (import.meta.env.DEV) {
-    return 'http://localhost:8080';
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin;
   }
 
   return '';
