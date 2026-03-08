@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAppState } from '../state/appState.js';
+import { getApiBaseUrl } from '../lib/apiBaseUrl.js';
 
 const TIME_RANGES = [
   { value: 'short_term', label: '4 Weeks' },
@@ -54,7 +55,7 @@ const Dashboard = () => {
       setLoadError('');
 
       try {
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+        const apiBaseUrl = getApiBaseUrl();
         const range = encodeURIComponent(selectedRange);
         let activeToken = accessToken;
 
@@ -255,7 +256,7 @@ const Dashboard = () => {
                   ? [...Array(5)].map((_, index) => <SkeletonAlbum key={index} />)
                   : getPage(albums, albumPage).map((album, i) => (
                       <button
-                        key={`${album.id}-${albumPage}`}
+                        key={`${album.id ?? 'album'}-${albumPage}-${i}`}
                         type="button"
                         onClick={() => handleRedirect('album', album.id, album.externalUrls?.spotify)}
                         className="relative flex flex-col group cursor-pointer hover:bg-white/3 animate-in fade-in slide-in-from-right-8 text-left"
@@ -291,7 +292,7 @@ const Dashboard = () => {
                   ? [...Array(5)].map((_, index) => <SkeletonArtist key={index} />)
                   : getPage(artists, artistPage).map((artist, i) => (
                       <button
-                        key={`${artist.id}-${artistPage}`}
+                        key={`${artist.id ?? 'artist'}-${artistPage}-${i}`}
                         type="button"
                         onClick={() => handleRedirect('artist', artist.id, artist.externalUrls?.spotify)}
                         className="relative flex flex-col items-center p-1 transition-all duration-300 ease-out group cursor-pointer hover:bg-white/3 hover:z-50 active:scale-95 animate-in fade-in slide-in-from-right-8 text-center"
@@ -329,7 +330,7 @@ const Dashboard = () => {
                   ? [...Array(5)].map((_, index) => <SkeletonPlaylist key={index} />)
                   : getPage(playlists, playlistPage).map((playlist, i) => (
                       <button
-                        key={`${playlist.id}-${playlistPage}`}
+                        key={`${playlist.id ?? 'playlist'}-${playlistPage}-${i}`}
                         type="button"
                         onClick={() =>
                           handleRedirect('playlist', playlist.id, playlist.externalUrls?.spotify ?? playlist.external_urls?.spotify)

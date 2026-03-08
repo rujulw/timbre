@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { AppStateContext } from './appState.js';
 
 const STORAGE_KEY = 'timbre.app_state.v1';
@@ -85,33 +85,60 @@ function syncLegacyStorage(state) {
 export function AppStateProvider({ children }) {
   const [appState, setAppState] = useState(readInitialState);
 
+  const persistState = useCallback((nextState) => {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+    syncLegacyStorage(nextState);
+  }, []);
+
+  const setHydratedState = useCallback((nextState) => {
+    setAppState(nextState);
+    persistState(nextState);
+  }, [persistState]);
+
+  const updateAuthTokens = useCallback((accessToken, refreshToken) => {
+    setAppState((prev) => {
+      const nextState = {
+        ...(prev ?? {}),
+        accessToken,
+        refreshToken: refreshToken ?? prev?.refreshToken ?? null,
+      };
+      persistState(nextState);
+      return nextState;
+    });
+  }, [persistState]);
+
+  const updateAppState = useCallback((updater) => {
+    setAppState((prev) => {
+      const baseState = prev ?? {};
+      const nextState =
+        typeof updater === 'function'
+          ? updater(baseState)
+          : { ...baseState, ...(updater ?? {}) };
+
+      if (!nextState) {
+        return prev;
+      }
+
+      persistState(nextState);
+      return nextState;
+    });
+  }, [persistState]);
+
+  const clearAppState = useCallback(() => {
+    setAppState(null);
+    window.localStorage.removeItem(STORAGE_KEY);
+    syncLegacyStorage(null);
+  }, []);
+
   const value = useMemo(
     () => ({
       appState,
-      setHydratedState: (nextState) => {
-        setAppState(nextState);
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
-        syncLegacyStorage(nextState);
-      },
-      updateAuthTokens: (accessToken, refreshToken) => {
-        setAppState((prev) => {
-          const nextState = {
-            ...(prev ?? {}),
-            accessToken,
-            refreshToken: refreshToken ?? prev?.refreshToken ?? null,
-          };
-          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
-          syncLegacyStorage(nextState);
-          return nextState;
-        });
-      },
-      clearAppState: () => {
-        setAppState(null);
-        window.localStorage.removeItem(STORAGE_KEY);
-        syncLegacyStorage(null);
-      },
+      setHydratedState,
+      updateAuthTokens,
+      updateAppState,
+      clearAppState,
     }),
-    [appState]
+    [appState, clearAppState, setHydratedState, updateAppState, updateAuthTokens]
   );
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;

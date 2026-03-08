@@ -1,9 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppState } from '../state/appState.js';
+import { getApiBaseUrl } from '../lib/apiBaseUrl.js';
 
 const Callback = () => {
   const navigate = useNavigate();
   const hasFetched = useRef(false);
+  const { setHydratedState } = useAppState();
+  const apiBaseUrl = getApiBaseUrl();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -14,7 +18,7 @@ const Callback = () => {
       
       console.log("Exchanging code for token...");
       
-      fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/callback?code=${code}`)
+      fetch(`${apiBaseUrl}/api/auth/callback?code=${code}`)
         .then(res => {
           if (!res.ok) throw new Error("Backend failed");
           return res.json();
@@ -44,27 +48,43 @@ const Callback = () => {
                 localStorage.setItem('profile_url', data.profileUrl);
                 console.log("Saved Profile Link:", data.profileUrl);
             }
-            if (data.displayName) {
-                localStorage.setItem('display_name', data.displayName);
+            const resolvedDisplayName = data.displayName ?? data?.user?.display_name ?? null;
+            if (resolvedDisplayName) {
+                localStorage.setItem('display_name', resolvedDisplayName);
             }
 
-            navigate('/dashboard', { 
-                    state: { 
-                        songs: data.songs || [], 
-                        artists: data.artists || [], 
-                        recentlyPlayed: data.recentlyPlayed || [],
-                        albums: data.albums || [],
-                        playlists: data.playlists || [],
-                        currentlyPlaying: data.currentlyPlaying
-                    } 
-                });
+            const currentlyPlayingTrack = data?.currentlyPlaying?.item || data?.currentlyPlaying?.track || null;
+            const currentlyPlayingStatus = data?.currentlyPlaying?.is_playing ?? data?.currentlyPlaying?.isPlaying ?? false;
+
+            setHydratedState({
+                status: data.status ?? 'dashboard_hydrated',
+                userId: data.userId ?? null,
+                spotifyId: data.spotifyId ?? data?.user?.id ?? null,
+                accessToken: data.accessToken ?? localStorage.getItem('spotify_access_token'),
+                refreshToken: data.refreshToken ?? localStorage.getItem('spotify_refresh_token'),
+                expiresIn: data.expiresIn ?? null,
+                user: data.user ?? null,
+                profileUrl: data.profileUrl ?? data?.user?.externalUrls?.spotify ?? null,
+                songs: data.songs || [],
+                artists: data.artists || [],
+                albums: data.albums || [],
+                playlists: data.playlists || [],
+                recentlyPlayed: data.recentlyPlayed || [],
+                liveHistory: data.recentlyPlayed || [],
+                currentlyPlaying: data.currentlyPlaying || null,
+                activeTrack: currentlyPlayingTrack
+                  ? { track: currentlyPlayingTrack, isPlaying: currentlyPlayingStatus }
+                  : null,
+            });
+
+            navigate('/dashboard', { replace: true });
         })
         .catch(err => {
           console.error("Fetch error:", err);
           navigate('/'); 
         });
     }
-  }, [navigate]);
+  }, [apiBaseUrl, navigate, setHydratedState]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black text-white">

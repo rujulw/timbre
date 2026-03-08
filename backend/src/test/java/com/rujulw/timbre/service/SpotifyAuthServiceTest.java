@@ -2,21 +2,25 @@ package com.rujulw.timbre.service;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import com.rujulw.timbre.config.SpotifyProperties;
 import com.rujulw.timbre.dto.SpotifyTokenResponse;
 import com.rujulw.timbre.dto.SpotifyUserDTO;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.client.RestClient;
 import org.springframework.test.web.client.MockRestServiceServer;
 
@@ -110,6 +114,45 @@ class SpotifyAuthServiceTest {
         assertEquals("Rujul", user.getDisplayName());
         assertEquals("rujul@example.com", user.getEmail());
         assertEquals("https://img.example/user.png", user.getImages().get(0).getUrl());
+        server.verify();
+    }
+
+    @Test
+    void getCurrentlyPlaying_refreshesTokenOnUnauthorizedAndRetries() {
+        server.expect(requestTo("https://api.spotify.com/v1/me/player/currently-playing"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer expired-access"))
+                .andRespond(withStatus(HttpStatus.UNAUTHORIZED));
+
+        server.expect(requestTo("https://accounts.spotify.com/api/token"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(content().string(containsString("grant_type=refresh_token")))
+                .andExpect(content().string(containsString("refresh_token=refresh-xyz")))
+                .andRespond(withSuccess("""
+                        {
+                          "access_token": "new-access-1",
+                          "token_type": "Bearer",
+                          "expires_in": 3600
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        server.expect(requestTo("https://api.spotify.com/v1/me/player/currently-playing"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer new-access-1"))
+                .andRespond(withSuccess("""
+                        {
+                          "is_playing": true,
+                          "item": {
+                            "id": "track-1"
+                          }
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        Map<String, Object> response = spotifyAuthService.getCurrentlyPlaying("expired-access", "refresh-xyz");
+
+        assertNotNull(response);
+        assertEquals(true, response.get("is_playing"));
+        assertEquals("new-access-1", response.get("newAccessToken"));
         server.verify();
     }
 }

@@ -3,6 +3,14 @@
 ## Goal
 Build timbre in a clean, showcaseable, industry-standard GitHub Flow, using the existing project as reference while producing a cleaner v1 codebase.
 
+## Current Position (As Of 2026-03-07)
+- Active stream: `feat-player-experience`.
+- Current commit target: **Commit 20** (`[test] add frontend tests for polling logic, route protection, and player rendering`).
+- Delivery style from this point onward:
+- Read `old-backend/` and `old-frontend/` first for behavior parity.
+- Port to `backend/` and `frontend/` with commit-scoped changes.
+- Continue strict sequence through commits 16-25.
+
 ## Immediate Baseline
 - [x] Commit 1: monorepo scaffold (`backend`, `frontend`, `docs`)
 - [x] Commit 2: architecture conventions, naming, and folder boundaries
@@ -29,11 +37,11 @@ Build timbre in a clean, showcaseable, industry-standard GitHub Flow, using the 
 - [x] Routing/state guard stabilization
 
 ## Milestone 4 — Player Experience
-- [ ] Live currently playing endpoint + refresh fallback
-- [ ] Global polling and session history behavior
-- [ ] Player page and vinyl interaction design
-- [ ] Navbar/session shell on protected routes
-- [ ] Frontend tests for player + routing behavior
+- [x] Live currently playing endpoint + refresh fallback (Commit 16)
+- [x] Global polling and session history behavior (Commit 17)
+- [x] Player page and vinyl interaction design (Commit 18)
+- [x] Navbar/session shell on protected routes (Commit 19)
+- [x] Frontend tests for player + routing behavior (Commit 20)
 
 ## Milestone 5 — Snapshot + Release
 - [ ] Playlist snapshot backend endpoint

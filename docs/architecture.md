@@ -10,6 +10,14 @@ Current model:
 - Frontend and backend communicate only via HTTP API contracts.
 - Spotify is treated as an external integration owned by backend.
 
+## Current Delivery Stage (As Of 2026-03-07)
+- Active branch track: `feat-player-experience`.
+- Commit position: **Commit 20** (`[test] add frontend tests for polling logic, route protection, and player rendering`).
+- Execution pattern from this point:
+- Use `old-backend/` and `old-frontend/` as behavior references.
+- Re-implement in `backend/` and `frontend/` with clean boundaries.
+- Keep commit ordering strict to `commits.txt` (16 -> 25) without skipping ahead.
+
 ## Repository Structure
 - `frontend/`: React app (routes, pages, components, client-side state).
 - `backend/`: Spring Boot app (controllers, services, persistence, config).
@@ -35,7 +43,12 @@ Current frontend state model:
 - Dashboard supports time-range switching (`short_term`, `medium_term`, `long_term`) for top tracks/artists.
 - Dashboard uses loading skeleton states while range data is being fetched.
 - Protected layout wraps authenticated routes and applies consistent top navigation shell.
+- Navbar includes session controls (profile menu + Spotify profile deep link + logout action).
 - Route guards enforce authenticated access to dashboard/player/stats/settings paths.
+- App-level live playback poller now runs against `/api/auth/currently-playing` every 5 seconds.
+- Poller updates `activeTrack`, `currentlyPlaying`, and deduped `liveHistory` in app state.
+- Player route now renders vinyl deck + currently-playing card + session history rail.
+- Player layout preserves old-frontend 60/40 deck-to-info ratio while using responsive clamp-based sizing to avoid fixed-screen assumptions.
 
 ### Backend (`backend`)
 Current responsibilities:
@@ -44,6 +57,12 @@ Current responsibilities:
 - User identity/token metadata sync to PostgreSQL.
 - Spotify analytics endpoints for top tracks, top artists, and recently played.
 - Safe translation of Spotify payloads to frontend-ready DTOs.
+
+Commit-16 in-progress responsibility:
+- Add `/api/auth/currently-playing` endpoint behavior aligned to old backend:
+- Primary fetch against Spotify currently-playing API.
+- Token refresh fallback on unauthorized/expired token paths.
+- Normalized response payload for frontend polling consumers.
 
 Future responsibilities:
 - Security hardening and access controls.
@@ -56,8 +75,10 @@ Future responsibilities:
 3. Backend completes OAuth callback and returns hydrated bootstrap payload.
 - Access/refresh token handling is managed through backend-auth flow.
 - Frontend initializes dashboard state from aggregated callback data (`songs`, `artists`, `albums`, `recentlyPlayed`) and auth metadata.
-4. Frontend polls currently playing via backend and updates session state.
-5. User interactions (range switches, snapshot creation) call backend APIs.
+4. Commit 16 establishes backend currently-playing endpoint with refresh fallback.
+5. Commit 17 runs frontend polling/session-history loop consuming that endpoint.
+6. Commit 18 player page consumes polled playback/session state and enables deep links to Spotify tracks.
+7. User interactions (range switches, snapshot creation) call backend APIs.
 
 ## Data Model
 - `User` (persisted): spotify id, profile metadata, token metadata.
@@ -65,7 +86,7 @@ Future responsibilities:
 - Spotify DTOs: API boundary objects only (not persistence entities).
 
 Current implemented backend layers:
-- `controller`: `AuthController` (`/api/auth/login`, `/api/auth/callback`)
+- `controller`: `AuthController` (`/api/auth/login`, `/api/auth/callback`, `/api/auth/refresh-token`, `/api/auth/currently-playing`)
 - `service`: `SpotifyAuthService`, `UserService`
 - `repository`: `UserRepository`
 - `model`: `User` (`app_users` table)
@@ -78,6 +99,10 @@ Current implemented backend layers:
 - Use clear layer naming:
 - Frontend: `pages/`, `components/`.
 - Backend: `controller/`, `service/`, `repository/`, `model/`, `dto/`, `config/`.
+- Reference-first workflow for commits 16+:
+- Read old implementation in `old-backend/` and `old-frontend/`.
+- Port behavior with minimal divergence.
+- Validate each commit with tests/build before advancing.
 
 ## Known Gaps
 - Initial phase prioritizes rebuild velocity over full hardening.
