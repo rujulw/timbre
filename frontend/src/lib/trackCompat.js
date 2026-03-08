@@ -1,4 +1,17 @@
 const FALLBACK_TRACK_ART = 'https://via.placeholder.com/600/1a1a1a/ffffff?text=Timbre';
+const VINYL_THEME_COLORS = ['#f4d35e', '#ff7a59', '#6ee7ff', '#7dd56f', '#f78fb3', '#a78bfa', '#34d399', '#60a5fa'];
+
+function hashString(value) {
+  let hash = 0;
+  const input = String(value ?? 'timbre');
+
+  for (let i = 0; i < input.length; i += 1) {
+    hash = (hash << 5) - hash + input.charCodeAt(i);
+    hash |= 0;
+  }
+
+  return Math.abs(hash);
+}
 
 function normalizeArtists(artists) {
   if (!Array.isArray(artists) || artists.length === 0) {
@@ -50,8 +63,17 @@ export function normalizeTrack(track) {
       ...(raw?.album ?? {}),
       name: raw?.album?.name?.trim() || (source === 'local' ? 'Local Files' : raw?.album?.name ?? ''),
       images: hasArtwork ? albumImages : [{ url: FALLBACK_TRACK_ART }],
+      hasArtwork,
     },
   };
+}
+
+export function getTrackThemeColor(track) {
+  const normalized = normalizeTrack(track);
+  const firstArtist = normalized.artists?.[0]?.name ?? '- -';
+  const seed = normalized.uri || normalized.id || `${normalized.name}:${firstArtist}`;
+  const paletteIndex = hashString(seed) % VINYL_THEME_COLORS.length;
+  return VINYL_THEME_COLORS[paletteIndex];
 }
 
 export function getTrackIdentity(track) {

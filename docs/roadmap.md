@@ -1,55 +1,37 @@
 # Roadmap
 
-## Goal
-Build timbre in a clean, showcaseable, industry-standard GitHub Flow, using the existing project as reference while producing a cleaner v1 codebase.
+## Current Goal
+Ship a stable, deployable `v1.0.0` with consistent UI behavior, hardened auth flow, and clean docs.
 
-## Current Position (As Of 2026-03-07)
-- Active stream: `feat/local-files`.
-- Current target: final release hardening after local-file compatibility placeholder rollout.
-- Delivery style from this point onward:
-- Read `old-backend/` and `old-frontend/` first for behavior parity.
-- Port to `backend/` and `frontend/` with commit-scoped changes.
-- Continue strict sequence through the remaining milestones.
+## Completed
 
-## Immediate Baseline
-- [x] Monorepo scaffold (`backend`, `frontend`, `docs`)
-- [x] Architecture conventions, naming, and folder boundaries
+- OAuth login + callback bootstrap
+- Dashboard range data flow
+- Player view with live polling and history
+- Snapshot playlist creation flow
+- Local-track normalization/fallback support
+- Frontend and backend test coverage for critical contracts
 
-## Milestone 1 — Foundation
-- [x] Scaffold repo layout
-- [x] Define conventions and architecture baseline
-- [x] Bootstrap backend Spring Boot skeleton
-- [x] Bootstrap frontend React/Vite skeleton
-- [x] Add baseline CI checks (build/lint/smoke)
+## Remaining Finalization Work
 
-## Milestone 2 — Auth Foundation
-- [x] Spotify configuration wiring
-- [x] Auth login + callback skeleton
-- [x] Spotify token/profile service
-- [x] User persistence for token metadata
-- [x] Auth-focused test coverage
+### Release Hardening
+- Validate production env configuration end-to-end
+- Run manual smoke tests for all major user flows
+- Confirm no token/query leakage in runtime paths
 
-## Milestone 3 — Dashboard Data Flow
-- [x] Top tracks/artists/recent endpoints
-- [x] Aggregated hydration payload
-- [x] Frontend callback hydration + global state bootstrap
-- [x] Dashboard overview + range switcher
-- [x] Routing/state guard stabilization
+### UX Polish
+- Verify responsive behavior across small and large monitors
+- Validate local-file visual fallback consistency
+- Final footer/navbar/layout pass
 
-## Milestone 4 — Player Experience
-- [x] Live currently playing endpoint + refresh fallback
-- [x] Global polling and session history behavior
-- [x] Player page and vinyl interaction design
-- [x] Navbar/session shell on protected routes
-- [x] Frontend tests for player + routing behavior
+### Documentation Finalization
+- Keep all docs synchronized with current contracts and env vars
+- Preserve one terminology set (`frontend`, `backend`, `api`)
+- Keep release checklist authoritative and current
 
-## Milestone 5 — Snapshot Workflow
-- [x] Playlist snapshot backend endpoint
-- [x] Dashboard snapshot action integration
-- [x] API base-url consistency cleanup
-- [x] Integration tests for snapshot + range transitions
+## Release Exit Criteria (`v1.0.0`)
 
-## Milestone 6 — Local File Compatibility + Release
-- [x] Local-files compatibility placeholder and null-safe metadata handling
-- [ ] Final UI consistency checks and pre-release polish pass
-- [ ] Release `v1.0.0`
+- Frontend lint/test/build green
+- Backend test/package green
+- Manual smoke test complete
+- Documentation reviewed and consistent

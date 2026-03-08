@@ -1,33 +1,25 @@
 # Dashboard Data Foundation Design
 
 ## Scope
-Commit 11 adds backend analytics endpoints used by dashboard data flows:
-- `GET /api/auth/top-tracks?token=...&range=...`
-- `GET /api/auth/top-artists?token=...&range=...`
-- `GET /api/auth/recently-played?token=...`
-- `POST /api/auth/create-snapshot?token=...` (snapshot playlist creation from selected dashboard track set)
+Dashboard data is hydrated at callback and refreshable by time range.
 
-## Service Responsibilities
-`SpotifyAuthService` now provides:
-- `getTopTracks(accessToken, timeRange)`
-- `getTopArtists(accessToken, timeRange)`
-- `getRecentlyPlayed(accessToken)`
+## Backend Contracts
 
-Each method calls Spotify Web API through `RestClient`, maps the result via `SpotifyPager<T>`, and returns list payloads for controller responses.
+- `GET /api/auth/top-tracks?range=<short_term|medium_term|long_term>`
+- `GET /api/auth/top-artists?range=<short_term|medium_term|long_term>`
+- `GET /api/auth/playlists`
+- `POST /api/auth/create-snapshot`
 
-## DTO Layer
-Added DTOs aligned to Spotify response shape:
-- `SpotifyTrackDTO`
-- `SpotifyArtistDTO`
-- `SpotifyRecentlyPlayedDTO`
-- `SpotifyPager<T>`
+All authenticated requests use `Authorization: Bearer <token>`.
 
-## API Contract Notes
-- `range` defaults to `short_term`.
-- Endpoint payloads are raw typed lists for now.
-- Aggregated callback hydration (commit 12) now returns:
-- auth/user metadata (`accessToken`, `refreshToken`, `expiresIn`, `userId`, `spotifyId`, `user`)
-- dashboard bootstrap data (`songs`, `artists`, `albums`, `recentlyPlayed`)
-- Snapshot creation contract:
-- request body: `{ "name": string, "uris": string[] }`
-- URI normalization: plain track ids are converted to `spotify:track:<id>` before add-tracks call.
+## Frontend Behavior
+
+- Uses callback payload as initial data source.
+- Supports range switching and refreshes top tracks/artists/playlists.
+- Derives top albums client-side from track data.
+- Supports snapshot playlist creation with normalized Spotify URIs.
+
+## Local Track Handling
+
+- Local/non-Spotify tracks are filtered out of snapshot URI payloads.
+- Dashboard rendering stays null-safe for missing artwork/ids.

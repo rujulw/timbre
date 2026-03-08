@@ -2,21 +2,26 @@ import { useEffect, useMemo, useState } from 'react';
 import { ColorExtractor } from 'react-color-extractor';
 import { useAppState } from '../state/appState.js';
 import VinylDisplay from '../components/VinylDisplay.jsx';
-import { normalizeTrack, resolveTrackSource } from '../lib/trackCompat.js';
+import { getTrackIdentity, getTrackThemeColor, normalizeTrack, resolveTrackSource } from '../lib/trackCompat.js';
 
 const Player = () => {
   const { appState } = useAppState();
-  const [accentColor, setAccentColor] = useState(() => window.localStorage.getItem('player_accent_color'));
+  const [accentColor, setAccentColor] = useState(null);
 
   const liveHistory = Array.isArray(appState?.liveHistory) ? appState.liveHistory : [];
   const activeTrack = appState?.activeTrack ?? null;
   const currentTrack = normalizeTrack(activeTrack?.track || activeTrack);
   const currentTrackSource = resolveTrackSource(currentTrack);
+  const currentTrackKey = getTrackIdentity(currentTrack);
   const currentId = currentTrack?.id;
   const currentUrl = currentTrack?.externalUrls?.spotify ?? currentTrack?.external_urls?.spotify;
   const currentTrackArt = currentTrack?.album?.images?.[0]?.url;
+  const currentTrackHasArtwork = currentTrack?.album?.hasArtwork === true;
+  const currentTrackThemeColor = getTrackThemeColor(currentTrack);
   const isPlaying = activeTrack?.isPlaying === true;
-  const resolvedAccentColor = accentColor ?? 'rgba(255,255,255,0.72)';
+  const resolvedAccentColor = currentTrackHasArtwork
+    ? accentColor ?? 'rgba(255,255,255,0.72)'
+    : currentTrackThemeColor;
   const [motionTick, setMotionTick] = useState(0);
 
   useEffect(() => {
@@ -106,15 +111,13 @@ const Player = () => {
 
   const handleColors = (colors) => {
     if (colors?.length > 0) {
-      const nextAccentColor = colors[0];
-      setAccentColor(nextAccentColor);
-      window.localStorage.setItem('player_accent_color', nextAccentColor);
+      setAccentColor(colors[0]);
     }
   };
 
   return (
     <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-450 flex-col gap-5 overflow-hidden px-4 py-4 lg:grid lg:h-[calc(100vh-5rem)] lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-8 lg:px-8 lg:py-6">
-      {currentTrackArt ? (
+      {currentTrackArt && currentTrackHasArtwork ? (
         <div className="hidden">
           <ColorExtractor key={currentTrackArt} src={currentTrackArt} getColors={handleColors} />
         </div>
@@ -201,6 +204,7 @@ const Player = () => {
           <div className="custom-scroll flex-1 space-y-1 overflow-y-auto pr-2">
             {liveHistory.slice(1).map((item, i) => {
               const trackData = normalizeTrack(item.track || item);
+              const trackKey = getTrackIdentity(trackData);
               const trackId = trackData?.id;
               const trackUrl = trackData?.externalUrls?.spotify ?? trackData?.external_urls?.spotify;
               const trackSource = resolveTrackSource(trackData);
@@ -209,7 +213,7 @@ const Player = () => {
                   key={`${trackId}-${i}`}
                   onClick={() => handleRedirect('track', trackId, trackUrl, trackSource)}
                   className={`group flex cursor-pointer items-center gap-3 rounded-xl p-3 transition-all ${
-                    currentTrack?.id === trackData?.id ? 'bg-white/10' : 'hover:bg-white/5'
+                    currentTrackKey === trackKey ? 'bg-white/10' : 'hover:bg-white/5'
                   }`}
                 >
                   <img src={trackData?.album?.images?.[0]?.url} className="h-12 w-12 shadow-md transition-all duration-500" alt="" />

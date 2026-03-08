@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ColorExtractor } from 'react-color-extractor';
-import { normalizeTrack } from '../lib/trackCompat.js';
+import { getTrackThemeColor, normalizeTrack } from '../lib/trackCompat.js';
 
 const PLACEHOLDER_TRACK = {
   name: 'nothing',
@@ -13,14 +13,17 @@ const PLACEHOLDER_TRACK = {
 
 const VinylDisplay = ({ track, isPlaying }) => {
   const trackData = normalizeTrack(track?.track || track || PLACEHOLDER_TRACK);
-  const [dominantColor, setDominantColor] = useState('#282828');
+  const [extractedColor, setExtractedColor] = useState('#282828');
   const imageUrl = trackData.album?.images?.[0]?.url;
+  const hasArtwork = trackData?.album?.hasArtwork === true;
+  const themedFallbackColor = getTrackThemeColor(trackData);
+  const dominantColor = hasArtwork ? extractedColor : themedFallbackColor;
 
   const handleColors = (detectedColors) => {
     if (detectedColors?.length > 0) {
-      setDominantColor(detectedColors[0]);
+      setExtractedColor(detectedColors[0]);
     } else {
-      setDominantColor('#282828');
+      setExtractedColor('#282828');
     }
   };
 
@@ -30,7 +33,7 @@ const VinylDisplay = ({ track, isPlaying }) => {
 
   return (
     <div className="relative flex w-[min(92%,68vh)] max-w-184 scale-[1.08] items-center justify-center">
-      {imageUrl ? <ColorExtractor key={imageUrl} src={imageUrl} getColors={handleColors} /> : null}
+      {imageUrl && hasArtwork ? <ColorExtractor key={imageUrl} src={imageUrl} getColors={handleColors} /> : null}
 
       <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-full border border-white/5 bg-[#050505] shadow-[0_0_100px_rgba(0,0,0,0.8)]">
         <div className={`animate-vinyl absolute inset-0 h-full w-full ${!isPlaying ? 'pause-vinyl' : ''}`}>

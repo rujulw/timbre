@@ -47,7 +47,13 @@ describe('GlobalPlaybackPoller', () => {
 
     await waitFor(() => {
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        'http://api.test/api/auth/currently-playing?token=access-1&refresh=refresh-1'
+        'http://api.test/api/auth/currently-playing',
+        {
+          headers: {
+            Authorization: 'Bearer access-1',
+            'X-Refresh-Token': 'refresh-1',
+          },
+        }
       );
       expect(updateAppState).toHaveBeenCalled();
     });

@@ -10,17 +10,25 @@ import com.rujulw.timbre.dto.SpotifyUserDTO;
 import com.rujulw.timbre.model.User;
 import com.rujulw.timbre.service.SpotifyAuthService;
 import com.rujulw.timbre.service.UserService;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.util.Base64;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,11 +40,16 @@ import org.springframework.web.servlet.view.RedirectView;
 public class AuthController {
 
     private static final String RESPONSE_TYPE = "code";
+    private static final String AUTH_HEADER = "Authorization";
+    private static final long OAUTH_STATE_MAX_AGE_SECONDS = 600;
+
     public record PlaylistRequest(String name, List<String> uris) { }
+    public record RefreshTokenRequest(String refreshToken) { }
 
     private final SpotifyProperties spotifyProperties;
     private final SpotifyAuthService spotifyAuthService;
     private final UserService userService;
+    private final SecureRandom secureRandom = new SecureRandom();
 
     public AuthController(
             SpotifyProperties spotifyProperties,
@@ -51,6 +64,7 @@ public class AuthController {
     @GetMapping("/login")
     public RedirectView login() {
         String scopes = String.join(" ", spotifyProperties.scopes());
+        String state = createOauthState();
 
         String authorizationUri = ServletUriComponentsBuilder
                 .fromUriString(spotifyProperties.authorizeUrl())
@@ -58,6 +72,7 @@ public class AuthController {
                 .queryParam("client_id", spotifyProperties.clientId())
                 .queryParam("scope", scopes)
                 .queryParam("redirect_uri", spotifyProperties.redirectUri())
+                .queryParam("state", state)
                 .build()
                 .toUriString();
 
@@ -65,7 +80,14 @@ public class AuthController {
     }
 
     @GetMapping("/callback")
-    public ResponseEntity<Map<String, Object>> callback(@RequestParam String code) {
+    public ResponseEntity<Map<String, Object>> callback(
+            @RequestParam String code,
+            @RequestParam String state
+    ) {
+        if (!isValidOauthState(state)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "invalid_oauth_state"));
+        }
+
         SpotifyTokenResponse tokenResponse = spotifyAuthService.exchangeCodeForToken(code);
         SpotifyUserDTO currentUser = spotifyAuthService.getCurrentUser(tokenResponse.getAccessToken());
         User persistedUser = userService.syncUser(currentUser, tokenResponse);
@@ -94,35 +116,60 @@ public class AuthController {
 
     @GetMapping("/top-tracks")
     public ResponseEntity<List<SpotifyTrackDTO>> getTopTracks(
-            @RequestParam String token,
+            @RequestHeader(value = AUTH_HEADER, required = false) String authorization,
             @RequestParam(defaultValue = "short_term") String range
     ) {
+        String token = extractBearerToken(authorization);
+        if (token == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(List.of());
+        }
         return ResponseEntity.ok(spotifyAuthService.getTopTracks(token, range));
     }
 
     @GetMapping("/top-artists")
     public ResponseEntity<List<SpotifyArtistDTO>> getTopArtists(
-            @RequestParam String token,
+            @RequestHeader(value = AUTH_HEADER, required = false) String authorization,
             @RequestParam(defaultValue = "short_term") String range
     ) {
+        String token = extractBearerToken(authorization);
+        if (token == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(List.of());
+        }
         return ResponseEntity.ok(spotifyAuthService.getTopArtists(token, range));
     }
 
     @GetMapping("/recently-played")
-    public ResponseEntity<List<SpotifyRecentlyPlayedDTO>> getRecentlyPlayed(@RequestParam String token) {
+    public ResponseEntity<List<SpotifyRecentlyPlayedDTO>> getRecentlyPlayed(
+            @RequestHeader(value = AUTH_HEADER, required = false) String authorization
+    ) {
+        String token = extractBearerToken(authorization);
+        if (token == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(List.of());
+        }
         return ResponseEntity.ok(spotifyAuthService.getRecentlyPlayed(token));
     }
 
     @GetMapping("/playlists")
-    public ResponseEntity<List<SpotifyPlaylistDTO>> getPlaylists(@RequestParam String token) {
+    public ResponseEntity<List<SpotifyPlaylistDTO>> getPlaylists(
+            @RequestHeader(value = AUTH_HEADER, required = false) String authorization
+    ) {
+        String token = extractBearerToken(authorization);
+        if (token == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(List.of());
+        }
         return ResponseEntity.ok(spotifyAuthService.getUserPlaylists(token));
     }
 
     @GetMapping("/currently-playing")
     public ResponseEntity<Map<String, Object>> getLivePlayback(
-            @RequestParam String token,
-            @RequestParam(required = false) String refresh
+            @RequestHeader(value = AUTH_HEADER, required = false) String authorization,
+            @RequestHeader(value = "X-Refresh-Token", required = false) String refresh
     ) {
+        String token = extractBearerToken(authorization);
+        if (token == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "missing_access_token"));
+        }
+
         Map<String, Object> currentlyPlayingResponse = spotifyAuthService.getCurrentlyPlaying(token, refresh);
         if (currentlyPlayingResponse == null) {
             return ResponseEntity.ok(Map.of("isPlaying", false));
@@ -136,15 +183,19 @@ public class AuthController {
         return ResponseEntity.ok(currentlyPlaying);
     }
 
-    @GetMapping("/refresh-token")
-    public ResponseEntity<Map<String, Object>> refreshToken(@RequestParam String refreshToken) {
-        SpotifyTokenResponse refreshed = spotifyAuthService.refreshAccessToken(refreshToken);
+    @PostMapping("/refresh-token")
+    public ResponseEntity<Map<String, Object>> refreshToken(@RequestBody RefreshTokenRequest payload) {
+        if (payload == null || payload.refreshToken() == null || payload.refreshToken().isBlank()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "missing_refresh_token"));
+        }
+
+        SpotifyTokenResponse refreshed = spotifyAuthService.refreshAccessToken(payload.refreshToken());
         if (refreshed == null || refreshed.getAccessToken() == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "refresh_failed"));
         }
 
-        String resolvedRefreshToken = refreshed.getRefreshToken() != null ? refreshed.getRefreshToken() : refreshToken;
+        String resolvedRefreshToken = refreshed.getRefreshToken() != null ? refreshed.getRefreshToken() : payload.refreshToken();
         return ResponseEntity.ok(Map.of(
                 "accessToken", refreshed.getAccessToken(),
                 "refreshToken", resolvedRefreshToken,
@@ -154,11 +205,89 @@ public class AuthController {
 
     @PostMapping("/create-snapshot")
     public ResponseEntity<Map<String, Object>> createSnapshot(
-            @RequestParam String token,
+            @RequestHeader(value = AUTH_HEADER, required = false) String authorization,
             @RequestBody PlaylistRequest payload
     ) {
+        String token = extractBearerToken(authorization);
+        if (token == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "missing_access_token"));
+        }
+
         Map<String, Object> result = spotifyAuthService.createSnapshotPlaylist(token, payload.name(), payload.uris());
         return ResponseEntity.ok(result);
+    }
+
+    private String createOauthState() {
+        long issuedAt = Instant.now().getEpochSecond();
+        byte[] nonce = new byte[16];
+        secureRandom.nextBytes(nonce);
+        String nonceEncoded = Base64.getUrlEncoder().withoutPadding().encodeToString(nonce);
+
+        String payload = issuedAt + "." + nonceEncoded;
+        String signature = sign(payload);
+        return payload + "." + signature;
+    }
+
+    private boolean isValidOauthState(String state) {
+        if (state == null || state.isBlank()) {
+            return false;
+        }
+
+        String[] parts = state.split("\\.");
+        if (parts.length != 3) {
+            return false;
+        }
+
+        long issuedAt;
+        try {
+            issuedAt = Long.parseLong(parts[0]);
+        } catch (NumberFormatException e) {
+            return false;
+        }
+
+        long now = Instant.now().getEpochSecond();
+        if (issuedAt > now || (now - issuedAt) > OAUTH_STATE_MAX_AGE_SECONDS) {
+            return false;
+        }
+
+        String payload = parts[0] + "." + parts[1];
+        String expectedSignature = sign(payload);
+        return MessageDigest.isEqual(
+                expectedSignature.getBytes(StandardCharsets.UTF_8),
+                parts[2].getBytes(StandardCharsets.UTF_8)
+        );
+    }
+
+    private String sign(String value) {
+        String secret = spotifyProperties.oauthStateSecret();
+        if (secret == null || secret.isBlank()) {
+            secret = spotifyProperties.clientSecret();
+        }
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("OAuth state secret is not configured");
+        }
+
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            byte[] signature = mac.doFinal(value.getBytes(StandardCharsets.UTF_8));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(signature);
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to sign OAuth state", e);
+        }
+    }
+
+    private String extractBearerToken(String authorization) {
+        if (authorization == null || authorization.isBlank()) {
+            return null;
+        }
+
+        if (!authorization.startsWith("Bearer ")) {
+            return null;
+        }
+
+        String token = authorization.substring("Bearer ".length()).trim();
+        return token.isBlank() ? null : token;
     }
 
     private List<SpotifyTrackDTO.Album> calculateTopAlbums(List<SpotifyTrackDTO> topTracks) {

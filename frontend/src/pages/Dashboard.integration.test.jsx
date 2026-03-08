@@ -51,20 +51,35 @@ describe('Dashboard integration behaviors', () => {
       updateAuthTokens: vi.fn(),
     });
 
-    globalThis.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({ snapshot_id: 'snap-1' }),
+    globalThis.fetch = vi.fn((url) => {
+      if (url.includes('/top-tracks') || url.includes('/top-artists') || url.includes('/playlists')) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => [] });
+      }
+
+      if (url.includes('/create-snapshot')) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ snapshot_id: 'snap-1' }) });
+      }
+
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
     });
 
     render(<Dashboard />);
 
     fireEvent.click(screen.getByRole('button', { name: /make playlist/i }));
 
-    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(1));
+    await waitFor(() => {
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/auth/create-snapshot'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({ Authorization: 'Bearer token-abc' }),
+        })
+      );
+    });
 
-    const [url, options] = globalThis.fetch.mock.calls[0];
-    expect(url).toContain('/api/auth/create-snapshot?token=token-abc');
+    const snapshotCall = globalThis.fetch.mock.calls.find((call) => call[0].includes('/api/auth/create-snapshot'));
+    const [url, options] = snapshotCall;
+    expect(url).toContain('/api/auth/create-snapshot');
     expect(options.method).toBe('POST');
 
     const payload = JSON.parse(options.body);
@@ -87,6 +102,8 @@ describe('Dashboard integration behaviors', () => {
     });
 
     globalThis.fetch = vi.fn((url) => {
+      const authHeader = 'Bearer token-xyz';
+
       if (url.includes('/top-tracks')) {
         return Promise.resolve({
           ok: true,
@@ -104,6 +121,7 @@ describe('Dashboard integration behaviors', () => {
               externalUrls: { spotify: 'https://open.spotify.com/track/track-medium-1' },
             },
           ]),
+          headers: { Authorization: authHeader },
         });
       }
 
@@ -119,6 +137,7 @@ describe('Dashboard integration behaviors', () => {
               externalUrls: { spotify: 'https://open.spotify.com/artist/artist-medium-1' },
             },
           ]),
+          headers: { Authorization: authHeader },
         });
       }
 
@@ -134,6 +153,7 @@ describe('Dashboard integration behaviors', () => {
             externalUrls: { spotify: 'https://open.spotify.com/playlist/playlist-medium-1' },
           },
         ]),
+        headers: { Authorization: authHeader },
       });
     });
 

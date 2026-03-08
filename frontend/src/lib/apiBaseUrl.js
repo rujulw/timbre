@@ -5,7 +5,9 @@ export function getApiBaseUrl() {
   }
 
   if (typeof window !== 'undefined' && window.location?.origin) {
-    return window.location.origin;
+    const hostname = window.location.hostname;
+    const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1';
+    return isLocalHost ? window.location.origin : '';
   }
 
   return '';

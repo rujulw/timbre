@@ -7,6 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record SpotifyProperties(
         String clientId,
         String clientSecret,
+        String oauthStateSecret,
         String redirectUri,
         String authorizeUrl,
         String tokenUrl,

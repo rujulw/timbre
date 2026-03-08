@@ -34,8 +34,8 @@ const Navbar = () => {
 
   const navItems = [
     { path: '/dashboard', label: 'overview' },
-    { path: '/stats', label: 'stats' },
     { path: '/player', label: 'player' },
+    { path: '/stats', label: 'stats' },
     { path: '/settings', label: 'settings' },
   ];
 

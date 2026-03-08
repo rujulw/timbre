@@ -9,6 +9,7 @@ import { useAppState } from './state/appState.js';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import ProtectedLayout from './components/ProtectedLayout.jsx';
 import UnderConstruction from './components/UnderConstruction.jsx';
+import Footer from './components/Footer.jsx';
 import { getApiBaseUrl } from './lib/apiBaseUrl.js';
 import { getTrackIdentity, normalizeTrack } from './lib/trackCompat.js';
 
@@ -30,11 +31,12 @@ export function GlobalPlaybackPoller() {
 
       try {
         const apiBaseUrl = getApiBaseUrl();
-        const response = await fetch(
-          `${apiBaseUrl}/api/auth/currently-playing?token=${encodeURIComponent(accessToken)}${
-            refreshToken ? `&refresh=${encodeURIComponent(refreshToken)}` : ''
-          }`
-        );
+        const response = await fetch(`${apiBaseUrl}/api/auth/currently-playing`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            ...(refreshToken ? { 'X-Refresh-Token': refreshToken } : {}),
+          },
+        });
 
         if (response.status === 404) {
           endpointMissingRef.current = true;
@@ -168,6 +170,7 @@ function App() {
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <Footer />
       </BrowserRouter>
     </AppStateProvider>
   );

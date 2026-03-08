@@ -1,6 +1,7 @@
 package com.rujulw.timbre.controller;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -21,6 +22,10 @@ import com.rujulw.timbre.service.SpotifyAuthService;
 import com.rujulw.timbre.service.UserService;
 import java.util.List;
 import java.util.Map;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,6 +53,7 @@ class AuthControllerTest {
         spotifyProperties = new SpotifyProperties(
                 "client-123",
                 "secret-123",
+                "state-secret-123",
                 "http://127.0.0.1:5173/callback",
                 "https://accounts.spotify.com/authorize",
                 "https://accounts.spotify.com/api/token",
@@ -65,7 +71,8 @@ class AuthControllerTest {
                 .andExpect(header().string("Location", containsString("https://accounts.spotify.com/authorize")))
                 .andExpect(header().string("Location", containsString("response_type=code")))
                 .andExpect(header().string("Location", containsString("client_id=client-123")))
-                .andExpect(header().string("Location", containsString("redirect_uri=http://127.0.0.1:5173/callback")));
+                .andExpect(header().string("Location", containsString("redirect_uri=http://127.0.0.1:5173/callback")))
+                .andExpect(header().string("Location", containsString("state=")));
     }
 
     @Test
@@ -112,7 +119,21 @@ class AuthControllerTest {
         when(spotifyAuthService.getRecentlyPlayed("access-123")).thenReturn(List.of(recent));
         when(spotifyAuthService.getUserPlaylists("access-123")).thenReturn(List.of(playlist));
 
-        mockMvc.perform(get("/api/auth/callback").param("code", "code-abc"))
+        String loginLocation = mockMvc.perform(get("/api/auth/login"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(header().string("Location", notNullValue()))
+                .andReturn()
+                .getResponse()
+                .getHeader("Location");
+
+        Pattern statePattern = Pattern.compile("(?:^|&)state=([^&]+)");
+        Matcher matcher = statePattern.matcher(loginLocation);
+        String state = null;
+        while (matcher.find()) {
+            state = URLDecoder.decode(matcher.group(1), StandardCharsets.UTF_8);
+        }
+
+        mockMvc.perform(get("/api/auth/callback").param("code", "code-abc").param("state", state))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("dashboard_hydrated"))
                 .andExpect(jsonPath("$.userId").value(42))
@@ -136,7 +157,13 @@ class AuthControllerTest {
 
         when(spotifyAuthService.refreshAccessToken("refresh-abc")).thenReturn(refreshed);
 
-        mockMvc.perform(get("/api/auth/refresh-token").param("refreshToken", "refresh-abc"))
+        mockMvc.perform(post("/api/auth/refresh-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "refreshToken": "refresh-abc"
+                                }
+                                """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("new-access-456"))
                 .andExpect(jsonPath("$.refreshToken").value("refresh-abc"))
@@ -149,8 +176,8 @@ class AuthControllerTest {
                 .thenReturn(Map.of("is_playing", true, "item", Map.of("id", "track-1")));
 
         mockMvc.perform(get("/api/auth/currently-playing")
-                        .param("token", "token-abc")
-                        .param("refresh", "refresh-abc"))
+                        .header("Authorization", "Bearer token-abc")
+                        .header("X-Refresh-Token", "refresh-abc"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.is_playing").value(true))
                 .andExpect(jsonPath("$.isPlaying").value(true))
@@ -162,7 +189,7 @@ class AuthControllerTest {
         when(spotifyAuthService.getCurrentlyPlaying("token-abc", null)).thenReturn(null);
 
         mockMvc.perform(get("/api/auth/currently-playing")
-                        .param("token", "token-abc"))
+                        .header("Authorization", "Bearer token-abc"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isPlaying").value(false));
     }
@@ -176,7 +203,7 @@ class AuthControllerTest {
         )).thenReturn(Map.of("snapshot_id", "snap-123"));
 
         mockMvc.perform(post("/api/auth/create-snapshot")
-                        .param("token", "token-abc")
+                        .header("Authorization", "Bearer token-abc")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {

@@ -35,6 +35,7 @@ class SpotifyAuthServiceTest {
         SpotifyProperties properties = new SpotifyProperties(
                 "client-id-123",
                 "client-secret-123",
+                "state-secret-123",
                 "http://127.0.0.1:5173/callback",
                 "https://accounts.spotify.com/authorize",
                 "https://accounts.spotify.com/api/token",

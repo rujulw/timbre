@@ -1,44 +1,24 @@
-# Frontend Callback Hydration Flow
+# Frontend Hydration Flow
 
 ## Scope
-Commit 13 implements frontend hydration wiring for dashboard bootstrap.
+How frontend session/app state is initialized after OAuth callback.
 
-## Route Flow
-1. User starts OAuth from landing page via backend `/api/auth/login`.
-2. Spotify redirects user to `/callback?code=...`.
-3. Callback page sends `code` to backend `/api/auth/callback`.
-4. Backend returns aggregated hydration payload.
-5. Frontend stores payload in global app-state context and localStorage.
-6. Frontend redirects user to `/dashboard`.
+## Route Sequence
 
-## State Contract
-Hydrated state mirrors backend callback payload, including:
-- auth/user metadata (`accessToken`, `refreshToken`, `user`, `spotifyId`)
-- dashboard data (`songs`, `artists`, `albums`, `recentlyPlayed`)
+1. `/` (landing) -> backend login redirect
+2. `/callback` receives `code` + `state` from Spotify
+3. Frontend calls backend callback endpoint
+4. Frontend writes hydrated auth/data state
+5. Frontend routes to `/dashboard`
 
-## Global State
-- `AppStateProvider` owns session state.
-- `useAppState` hook exposes `appState`, `setHydratedState`, and `clearAppState`.
-- Dashboard is guarded to require hydrated `accessToken`.
+## Hydrated State
 
-## Dashboard Range UX (Commit 14)
-- Added range switcher with three options:
-- `4 weeks` (`short_term`)
-- `6 months` (`medium_term`)
-- `all time` (`long_term`)
-- Uses callback payload as initial `short_term` data.
-- Fetches updated top tracks/artists on range change and derives top albums client-side.
-- Shows skeleton blocks while range fetch is in flight.
+Includes:
+- auth/token metadata
+- user profile metadata
+- songs/artists/albums/playlists
+- recently played history
 
-## Navigation And Guard Stabilization (Commit 15)
-- Added protected layout shell with top navigation component.
-- Added route guards for `/dashboard`, `/player`, `/stats`, and `/settings`.
-- Added placeholder pages for protected routes not fully implemented yet to preserve navigation continuity.
+## Guarding
 
-## API Base Consistency And Snapshot Integration
-- Frontend API calls are resolved through a single base-url resolver (`getApiBaseUrl`) with env override first and same-origin fallback.
-- Dashboard "make playlist" action now posts current top-track URIs to `/api/auth/create-snapshot`.
-- Snapshot naming is contextual to active range:
-- short term: current month format
-- medium term: rolling multi-month label
-- long term: all-time label
+Protected pages (`/dashboard`, `/player`, `/stats`, `/settings`) require hydrated auth state via `ProtectedRoute`.

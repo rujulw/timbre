@@ -1,42 +1,23 @@
-# Player Playback Polling (Commit 17)
+# Player Playback Polling
 
 ## Scope
-Commit 17 adds frontend global playback polling and session history state updates:
-- Poll endpoint: `/api/auth/currently-playing`
-- Poll cadence: every 5 seconds
-- App-level state updates: `activeTrack`, `currentlyPlaying`, `liveHistory`
+App-level polling that keeps playback state current across routes.
 
-## Reference Source
-Behavior is ported from old frontend polling flow in:
-- `old-frontend/src/App.jsx`
+## Poll Loop
 
-Porting intent:
-- Keep polling + dedupe semantics identical in spirit.
-- Keep implementation commit-scoped (no full player UI work in commit 17).
+- Runs in `GlobalPlaybackPoller`.
+- Interval: 5 seconds.
+- Reads access/refresh tokens from app state with local fallback.
 
-## Implemented Behavior
-1. Read auth tokens from app state with localStorage fallback.
-2. Call backend currently-playing endpoint with optional refresh token.
-3. If response contains `newAccessToken`, persist via app-state token update flow.
-4. Normalize playback payload (`currentlyPlaying` wrapper vs direct object).
-5. Update active playback state:
-- `activeTrack` includes `track` and `isPlaying`.
-- if no current item exists, preserve track but set `isPlaying` false.
-6. Update history:
-- prepend only when track id differs from current first entry
-- cap history size to 20
-- stamp each inserted entry with `played_at` timestamp
+## State Updates
 
-## Callback Hydration Alignment
-Callback flow now hydrates app context with:
-- dashboard datasets (`songs`, `artists`, `albums`, `playlists`)
-- playback bootstrap fields (`currentlyPlaying`, `activeTrack`, `liveHistory`)
+- Sets/updates:
+  - `activeTrack`
+  - `currentlyPlaying`
+  - `liveHistory` (deduped, capped)
 
-This ensures polling starts from a coherent state after OAuth redirect.
+## Contract Guarantees
 
-## Verification
-- `cd frontend && npm run lint`
-- `cd frontend && npm run build`
-
-## Downstream Usage
-- Commit 18 player UI consumes `activeTrack`, `currentlyPlaying`, and `liveHistory` from this polling flow.
+- Safe handling when endpoint returns no item/current playback.
+- History updates avoid duplicate consecutive entries.
+- Access token refresh from backend response is persisted.

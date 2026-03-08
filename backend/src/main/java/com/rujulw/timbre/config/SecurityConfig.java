@@ -10,8 +10,12 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // API is currently stateless and uses Spotify bearer/refresh tokens passed per request.
+        // CSRF protection is intentionally disabled for this API-only service surface.
         http.csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .anyRequest().denyAll());
         return http.build();
     }
 }

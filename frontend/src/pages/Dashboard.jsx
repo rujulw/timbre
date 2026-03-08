@@ -11,13 +11,15 @@ const TIME_RANGES = [
 const VISIBLE_TRACK_ROWS = 10;
 const TRACK_ROW_GAP = '0.2rem';
 const TRACK_VIEWPORT_HEIGHT = 'clamp(32rem, 62vh, 44rem)';
-const RAIL_TILE_SIZE = 'clamp(6.6rem, 8.6vw, 9.6rem)';
+const RAIL_TILE_SIZE = 'clamp(6.6rem, 8.6vw, 12rem)';
 const ARTIST_TILE_SIZE = RAIL_TILE_SIZE;
 
 const trackRowHeight = `calc((${TRACK_VIEWPORT_HEIGHT} - (${VISIBLE_TRACK_ROWS} - 1) * ${TRACK_ROW_GAP}) / ${VISIBLE_TRACK_ROWS})`;
 
 const Dashboard = () => {
   const { appState, updateAuthTokens } = useAppState();
+  const accessToken = appState?.accessToken ?? window.localStorage.getItem('spotify_access_token');
+  const refreshToken = appState?.refreshToken ?? window.localStorage.getItem('spotify_refresh_token');
   const [selectedRange, setSelectedRange] = useState('short_term');
   const [showMenu, setShowMenu] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -35,19 +37,7 @@ const Dashboard = () => {
   const itemsPerPage = 5;
 
   useEffect(() => {
-    const accessToken = appState?.accessToken ?? window.localStorage.getItem('spotify_access_token');
-    const refreshToken = appState?.refreshToken ?? window.localStorage.getItem('spotify_refresh_token');
-
     if (!accessToken) {
-      return;
-    }
-
-    if (selectedRange === 'short_term' && (appState?.songs || appState?.artists || appState?.albums)) {
-      setSongs(appState?.songs ?? []);
-      setArtists(appState?.artists ?? []);
-      setAlbums(appState?.albums ?? []);
-      setPlaylists(appState?.playlists ?? []);
-      setLoadError('');
       return;
     }
 
@@ -64,9 +54,15 @@ const Dashboard = () => {
 
         const loadTopData = (tokenValue) =>
           Promise.all([
-            fetch(`${apiBaseUrl}/api/auth/top-tracks?token=${encodeURIComponent(tokenValue)}&range=${range}`),
-            fetch(`${apiBaseUrl}/api/auth/top-artists?token=${encodeURIComponent(tokenValue)}&range=${range}`),
-            fetch(`${apiBaseUrl}/api/auth/playlists?token=${encodeURIComponent(tokenValue)}`),
+            fetch(`${apiBaseUrl}/api/auth/top-tracks?range=${range}`, {
+              headers: { Authorization: `Bearer ${tokenValue}` },
+            }),
+            fetch(`${apiBaseUrl}/api/auth/top-artists?range=${range}`, {
+              headers: { Authorization: `Bearer ${tokenValue}` },
+            }),
+            fetch(`${apiBaseUrl}/api/auth/playlists`, {
+              headers: { Authorization: `Bearer ${tokenValue}` },
+            }),
           ]);
 
         let [tracksResponse, artistsResponse, playlistsResponse] = await loadTopData(activeToken);
@@ -75,9 +71,11 @@ const Dashboard = () => {
           (tracksResponse.status === 401 || artistsResponse.status === 401 || playlistsResponse.status === 401) &&
           refreshToken
         ) {
-          const refreshResponse = await fetch(
-            `${apiBaseUrl}/api/auth/refresh-token?refreshToken=${encodeURIComponent(refreshToken)}`
-          );
+          const refreshResponse = await fetch(`${apiBaseUrl}/api/auth/refresh-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken }),
+          });
           if (refreshResponse.ok) {
             const refreshed = await refreshResponse.json();
             if (refreshed?.accessToken) {
@@ -120,7 +118,16 @@ const Dashboard = () => {
     return () => {
       cancelled = true;
     };
-  }, [appState, selectedRange, updateAuthTokens]);
+  }, [
+    accessToken,
+    appState?.albums,
+    appState?.artists,
+    appState?.playlists,
+    appState?.songs,
+    refreshToken,
+    selectedRange,
+    updateAuthTokens,
+  ]);
 
   useEffect(() => {
     setArtistPage(0);
@@ -198,10 +205,13 @@ const Dashboard = () => {
       }
 
       const response = await fetch(
-        `${apiBaseUrl}/api/auth/create-snapshot?token=${encodeURIComponent(accessToken)}`,
+        `${apiBaseUrl}/api/auth/create-snapshot`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
           body: JSON.stringify(payload),
         }
       );
@@ -244,12 +254,12 @@ const Dashboard = () => {
 
   return (
     <div className="w-full px-4 pb-10 md:px-8 xl:px-12">
-      <main className="mx-auto w-full max-w-355 space-y-7">
+      <main className="mx-auto w-full max-w-425 space-y-7">
         {loadError ? <p className="text-xs text-red-400">load error: {loadError}</p> : null}
 
         <div className="flex w-full flex-col items-stretch gap-8 xl:gap-10 lg:flex-row">
-          <section className="flex w-full flex-col rounded-2xl border border-white/5 bg-panel p-4 shadow-2xl lg:basis-[35%] lg:min-w-92ax-w-[34rem]">
-            <div className="mb-4 flex items-center justify-between">
+          <section className="flex w-full flex-col rounded-2xl border border-white/5 bg-panel p-4 shadow-2xl lg:w-104 lg:flex-none">
+            <div className="relative ml-2 mb-10 flex items-center justify-between">
               <h2 className="text-xl font-bold tracking-tighter lowercase">top tracks</h2>
               <button
                 type="button"
@@ -259,6 +269,7 @@ const Dashboard = () => {
               >
                 {isCreating ? 'creating...' : 'make playlist'}
               </button>
+              <div className="pointer-events-none absolute -bottom-5 left-0 right-0 h-px bg-linear-to-r from-transparent via-white/10 to-transparent" />
             </div>
 
             <div
@@ -299,7 +310,7 @@ const Dashboard = () => {
             </div>
           </section>
 
-          <div className="w-full space-y-2 overflow-hidden lg:basis-[65%]">
+          <div className="w-full min-w-0 space-y-2 overflow-hidden lg:flex-1">
             <div className="fixed right-4 top-24 z-50" ref={switcherRef}>
               <button
                 type="button"
