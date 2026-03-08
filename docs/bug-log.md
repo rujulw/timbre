@@ -92,3 +92,12 @@
 - Risk: inline route guards/layout wrappers and broad `localStorage.clear()` logout can cause brittle app-shell composition and unintended client-state deletion.
 - Fix: extracted reusable `ProtectedRoute` and `ProtectedLayout` components, moved protected screens to the shared shell, added navbar session dropdown (profile deep-link + logout), and replaced `localStorage.clear()` with scoped auth/session key cleanup.
 - Verification: `cd frontend && npm run lint && npm run build` passed.
+
+## 2026-03-07 - Commit 20 frontend test harness + player/route/poller coverage
+- Area: Frontend test infrastructure and real-time interaction safety (`vite.config.js`, `src/test/setup.js`, `src/components/ProtectedRoute.test.jsx`, `src/pages/Player.test.jsx`, `src/App.poller.test.jsx`)
+- Risk: no automated regression checks existed for route protection, live polling state updates, or player rendering contract.
+- Fix: introduced Vitest + Testing Library stack, jsdom setup with deterministic `localStorage` mock, and commit-scoped tests for:
+- protected route redirects and authorized pass-through
+- global playback poller endpoint call + state updater behavior
+- player page rendering from hydrated app-state inputs
+- Verification: `cd frontend && npm run lint && npm run build && npm run test` passed.

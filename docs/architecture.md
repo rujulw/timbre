@@ -12,7 +12,7 @@ Current model:
 
 ## Current Delivery Stage (As Of 2026-03-07)
 - Active branch track: `feat-player-experience`.
-- Commit position: **Commit 19** (`[impl] add navbar profile/session controls and protected layout shell`).
+- Commit position: **Commit 20** (`[test] add frontend tests for polling logic, route protection, and player rendering`).
 - Execution pattern from this point:
 - Use `old-backend/` and `old-frontend/` as behavior references.
 - Re-implement in `backend/` and `frontend/` with clean boundaries.

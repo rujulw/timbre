@@ -11,7 +11,7 @@ import ProtectedLayout from './components/ProtectedLayout.jsx';
 import UnderConstruction from './components/UnderConstruction.jsx';
 import { getApiBaseUrl } from './lib/apiBaseUrl.js';
 
-function GlobalPlaybackPoller() {
+export function GlobalPlaybackPoller() {
   const { appState, updateAuthTokens, updateAppState } = useAppState();
   const endpointMissingRef = useRef(false);
 
