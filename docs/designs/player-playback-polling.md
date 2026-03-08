@@ -37,3 +37,6 @@ This ensures polling starts from a coherent state after OAuth redirect.
 ## Verification
 - `cd frontend && npm run lint`
 - `cd frontend && npm run build`
+
+## Downstream Usage
+- Commit 18 player UI consumes `activeTrack`, `currentlyPlaying`, and `liveHistory` from this polling flow.

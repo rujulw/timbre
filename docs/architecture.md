@@ -46,7 +46,8 @@ Current frontend state model:
 - Route guards enforce authenticated access to dashboard/player/stats/settings paths.
 - App-level live playback poller now runs against `/api/auth/currently-playing` every 5 seconds.
 - Poller updates `activeTrack`, `currentlyPlaying`, and deduped `liveHistory` in app state.
-- Player route remains a guarded placeholder until commit 18 wires full player UI.
+- Player route now renders vinyl deck + currently-playing card + session history rail.
+- Player layout preserves old-frontend 60/40 deck-to-info ratio while using responsive clamp-based sizing to avoid fixed-screen assumptions.
 
 ### Backend (`backend`)
 Current responsibilities:
@@ -75,7 +76,8 @@ Future responsibilities:
 - Frontend initializes dashboard state from aggregated callback data (`songs`, `artists`, `albums`, `recentlyPlayed`) and auth metadata.
 4. Commit 16 establishes backend currently-playing endpoint with refresh fallback.
 5. Commit 17 runs frontend polling/session-history loop consuming that endpoint.
-6. User interactions (range switches, snapshot creation) call backend APIs.
+6. Commit 18 player page consumes polled playback/session state and enables deep links to Spotify tracks.
+7. User interactions (range switches, snapshot creation) call backend APIs.
 
 ## Data Model
 - `User` (persisted): spotify id, profile metadata, token metadata.

@@ -156,15 +156,35 @@ public class AuthController {
 
         Map<String, Long> albumCounts = topTracks.stream()
                 .map(SpotifyTrackDTO::getAlbum)
-                .filter(album -> album != null && album.getName() != null)
-                .collect(Collectors.groupingBy(SpotifyTrackDTO.Album::getName, Collectors.counting()));
+                .filter(album -> album != null && albumKey(album) != null)
+                .collect(Collectors.groupingBy(this::albumKey, Collectors.counting()));
 
-        return topTracks.stream()
+        Map<String, SpotifyTrackDTO.Album> uniqueAlbums = topTracks.stream()
                 .map(SpotifyTrackDTO::getAlbum)
-                .filter(album -> album != null && album.getName() != null)
-                .distinct()
-                .sorted(Comparator.comparing((SpotifyTrackDTO.Album a) -> albumCounts.getOrDefault(a.getName(), 0L)).reversed())
+                .filter(album -> album != null && albumKey(album) != null)
+                .collect(Collectors.toMap(
+                        this::albumKey,
+                        album -> album,
+                        (existing, ignored) -> existing,
+                        LinkedHashMap::new
+                ));
+
+        return uniqueAlbums.values().stream()
+                .sorted(Comparator.comparing((SpotifyTrackDTO.Album album) -> albumCounts.getOrDefault(albumKey(album), 0L)).reversed())
                 .limit(10)
                 .toList();
+    }
+
+    private String albumKey(SpotifyTrackDTO.Album album) {
+        if (album == null) {
+            return null;
+        }
+        if (album.getId() != null && !album.getId().isBlank()) {
+            return album.getId();
+        }
+        if (album.getName() != null && !album.getName().isBlank()) {
+            return album.getName();
+        }
+        return null;
     }
 }

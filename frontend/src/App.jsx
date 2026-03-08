@@ -1,12 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import LandingPage from './pages/LandingPage.jsx';
 import Callback from './pages/Callback.jsx';
 import Dashboard from './pages/Dashboard.jsx';
+import Player from './pages/Player.jsx';
 import { AppStateProvider } from './state/AppStateProvider.jsx';
 import { useAppState } from './state/appState.js';
 import Navbar from './components/Navbar.jsx';
 import UnderConstruction from './components/UnderConstruction.jsx';
+import { getApiBaseUrl } from './lib/apiBaseUrl.js';
 
 function ProtectedRoute({ children }) {
   const { appState } = useAppState();
@@ -30,9 +32,14 @@ function ProtectedLayout({ children }) {
 
 function GlobalPlaybackPoller() {
   const { appState, updateAuthTokens, updateAppState } = useAppState();
+  const endpointMissingRef = useRef(false);
 
   useEffect(() => {
     const fetchLivePlayback = async () => {
+      if (endpointMissingRef.current) {
+        return;
+      }
+
       const accessToken = appState?.accessToken ?? window.localStorage.getItem('spotify_access_token');
       const refreshToken = appState?.refreshToken ?? window.localStorage.getItem('spotify_refresh_token');
       if (!accessToken) {
@@ -40,12 +47,17 @@ function GlobalPlaybackPoller() {
       }
 
       try {
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+        const apiBaseUrl = getApiBaseUrl();
         const response = await fetch(
           `${apiBaseUrl}/api/auth/currently-playing?token=${encodeURIComponent(accessToken)}${
             refreshToken ? `&refresh=${encodeURIComponent(refreshToken)}` : ''
           }`
         );
+
+        if (response.status === 404) {
+          endpointMissingRef.current = true;
+          return;
+        }
 
         if (!response.ok) {
           return;
@@ -77,7 +89,11 @@ function GlobalPlaybackPoller() {
 
             const firstTrackId = previousHistory[0]?.track?.id ?? previousHistory[0]?.id ?? null;
             if (firstTrackId !== live.item.id) {
-              nextHistory = [{ track: live.item, played_at: new Date().toISOString() }, ...previousHistory].slice(0, 20);
+              const deDuplicatedHistory = previousHistory.filter((entry) => {
+                const entryId = entry?.track?.id ?? entry?.id ?? null;
+                return entryId !== live.item.id;
+              });
+              nextHistory = [{ track: live.item, played_at: new Date().toISOString() }, ...deDuplicatedHistory].slice(0, 20);
             }
 
             nextCurrentlyPlaying = live;
@@ -140,7 +156,7 @@ function App() {
             element={
               <ProtectedRoute>
                 <ProtectedLayout>
-                  <UnderConstruction pageName="player" />
+                  <Player />
                 </ProtectedLayout>
               </ProtectedRoute>
             }

@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppState } from '../state/appState.js';
+import { getApiBaseUrl } from '../lib/apiBaseUrl.js';
 
 const Callback = () => {
   const navigate = useNavigate();
   const hasFetched = useRef(false);
   const { setHydratedState } = useAppState();
+  const apiBaseUrl = getApiBaseUrl();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -16,7 +18,7 @@ const Callback = () => {
       
       console.log("Exchanging code for token...");
       
-      fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/callback?code=${code}`)
+      fetch(`${apiBaseUrl}/api/auth/callback?code=${code}`)
         .then(res => {
           if (!res.ok) throw new Error("Backend failed");
           return res.json();
@@ -81,7 +83,7 @@ const Callback = () => {
           navigate('/'); 
         });
     }
-  }, [navigate, setHydratedState]);
+  }, [apiBaseUrl, navigate, setHydratedState]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black text-white">

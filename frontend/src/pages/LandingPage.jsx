@@ -1,5 +1,7 @@
+import { getApiBaseUrl } from '../lib/apiBaseUrl.js';
+
 const LandingPage = () => {
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+  const apiBaseUrl = getApiBaseUrl();
 
   const handleLogin = () => {
     window.location.href = `${apiBaseUrl}/api/auth/login`;

@@ -73,3 +73,16 @@
 - Risk: without centralized polling state, player session history drifts and currently-playing status is lost between route transitions.
 - Fix: added app-level polling loop (5s), deduped `liveHistory` append logic, `activeTrack`/`currentlyPlaying` sync, and callback-time state hydration into app context.
 - Verification: `cd frontend && npm run lint && npm run build` passed.
+
+## 2026-03-07 - Commit 18 vinyl layout hardcoded sizing risk
+- Area: Frontend player page and vinyl deck composition
+- Risk: old-frontend player used hardcoded dimensions and full-viewport assumptions that degrade on different monitor sizes.
+- Fix: ported old player/vinyl structure with responsive sizing via `clamp()` and viewport-aware bounds while preserving original 60/40 layout ratio and interaction styling.
+- Additional stabilization: replaced render-time randomness with deterministic seeded bar config to satisfy React purity lint rules without changing visual intent.
+- Verification: `cd frontend && npm run lint && npm run build` passed.
+
+## 2026-03-07 - Commit 18 currently-playing 404 resilience and api-base normalization
+- Area: Frontend playback polling and auth callback API URL resolution
+- Symptom: repeated `404` on `/api/auth/currently-playing` when API base was misconfigured or unavailable in runtime environment.
+- Fix: introduced shared API base resolver (`env -> localhost in dev -> same-origin in prod`) and reused it across callback/login/dashboard/poller paths. Poller now disables further currently-playing requests when endpoint returns `404`.
+- Verification: `cd frontend && npm run lint && npm run build` passed.
