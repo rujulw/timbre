@@ -5,6 +5,7 @@ Commit 11 adds backend analytics endpoints used by dashboard data flows:
 - `GET /api/auth/top-tracks?token=...&range=...`
 - `GET /api/auth/top-artists?token=...&range=...`
 - `GET /api/auth/recently-played?token=...`
+- `POST /api/auth/create-snapshot?token=...` (snapshot playlist creation from selected dashboard track set)
 
 ## Service Responsibilities
 `SpotifyAuthService` now provides:
@@ -27,3 +28,6 @@ Added DTOs aligned to Spotify response shape:
 - Aggregated callback hydration (commit 12) now returns:
 - auth/user metadata (`accessToken`, `refreshToken`, `expiresIn`, `userId`, `spotifyId`, `user`)
 - dashboard bootstrap data (`songs`, `artists`, `albums`, `recentlyPlayed`)
+- Snapshot creation contract:
+- request body: `{ "name": string, "uris": string[] }`
+- URI normalization: plain track ids are converted to `spotify:track:<id>` before add-tracks call.

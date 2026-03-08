@@ -4,16 +4,16 @@
 Build timbre in a clean, showcaseable, industry-standard GitHub Flow, using the existing project as reference while producing a cleaner v1 codebase.
 
 ## Current Position (As Of 2026-03-07)
-- Active stream: `feat-player-experience`.
-- Current commit target: **Commit 20** (`[test] add frontend tests for polling logic, route protection, and player rendering`).
+- Active stream: `feat/make-playlist`.
+- Current target: local-file compatibility safety layer and release hardening.
 - Delivery style from this point onward:
 - Read `old-backend/` and `old-frontend/` first for behavior parity.
 - Port to `backend/` and `frontend/` with commit-scoped changes.
-- Continue strict sequence through commits 16-25.
+- Continue strict sequence through the remaining milestones.
 
 ## Immediate Baseline
-- [x] Commit 1: monorepo scaffold (`backend`, `frontend`, `docs`)
-- [x] Commit 2: architecture conventions, naming, and folder boundaries
+- [x] Monorepo scaffold (`backend`, `frontend`, `docs`)
+- [x] Architecture conventions, naming, and folder boundaries
 
 ## Milestone 1 — Foundation
 - [x] Scaffold repo layout
@@ -43,9 +43,13 @@ Build timbre in a clean, showcaseable, industry-standard GitHub Flow, using the 
 - [x] Navbar/session shell on protected routes
 - [x] Frontend tests for player + routing behavior
 
-## Milestone 5 — Snapshot + Release
-- [ ] Playlist snapshot backend endpoint
-- [ ] Dashboard snapshot action integration
-- [ ] API base-url consistency cleanup
-- [ ] Integration tests for snapshot + range transitions
+## Milestone 5 — Snapshot Workflow
+- [x] Playlist snapshot backend endpoint
+- [x] Dashboard snapshot action integration
+- [x] API base-url consistency cleanup
+- [x] Integration tests for snapshot + range transitions
+
+## Milestone 6 — Local File Compatibility + Release
+- [ ] Local-files compatibility placeholder and null-safe metadata handling
+- [ ] Final UI consistency checks and pre-release polish pass
 - [ ] Release `v1.0.0`

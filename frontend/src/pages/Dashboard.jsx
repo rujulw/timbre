@@ -283,6 +283,7 @@ const Dashboard = () => {
             <div className="fixed right-4 top-24 z-50" ref={switcherRef}>
               <button
                 type="button"
+                aria-label="toggle time range menu"
                 onClick={() => setShowMenu((prev) => !prev)}
                 className={`flex h-12 w-12 items-center justify-center rounded-full border transition-all duration-500 ${
                   isLoading ? 'animate-pulse border-white/40 bg-white/10' : 'border-white/10 bg-white/5 hover:bg-white/10'
