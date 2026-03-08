@@ -1,16 +1,10 @@
 # timbre
 
-A self-hosted, privacy-first analytics platform for Spotify listening data, built with Spring Boot and React.
+Timbre is a split-stack Spotify analytics app:
+- Backend API: Spring Boot, OAuth orchestration, Spotify proxying, persistence
+- Frontend app: React/Vite dashboard and player experience
 
-Timbre focuses on a clean split-stack architecture:
-- backend service for OAuth, data orchestration, and persistence
-- frontend client for dashboard/player UX and live session views
-
-See:
-- `docs/architecture.md` for system structure and synchronization model.
-- `roadmap.md` for planned refactors and feature expansion.
-
-## Tech Stack
+## Stack
 
 ### Backend
 - Java 21
@@ -24,32 +18,32 @@ See:
 ### Frontend
 - React 19
 - Vite 7
-- React Router DOM
+- React Router DOM 7
 - Tailwind CSS 4
-- Axios
+- Vitest + Testing Library
 
-## Project Structure
+## Repository Layout
 
 ```text
-new-timbre/
-  backend/        # Spring Boot API + Spotify integration
-  frontend/       # React/Vite client
-  docs/           # architecture and design notes
+timbre/
+  backend/        # Spring Boot API
+  frontend/       # React/Vite app
+  docs/           # Architecture and product/design notes
   README.md
 ```
 
-## Quick Start
+## Local Development
 
-### 1. Start backend
+### 1) Backend
 
 ```bash
 cd backend
 ./mvnw spring-boot:run
 ```
 
-Backend default: `http://localhost:8080`
+Default local API URL: `http://localhost:8080`
 
-### 2. Start frontend
+### 2) Frontend
 
 ```bash
 cd frontend
@@ -57,32 +51,57 @@ npm install
 npm run dev
 ```
 
-Frontend default: `http://127.0.0.1:5173`
+Default local app URL: `http://127.0.0.1:5173`
 
 ## Environment Variables
 
-### Backend (`backend/.env` or shell env)
+### Backend
 
+See `backend/.env.example`.
+
+Required for OAuth:
+- `SPOTIFY_CLIENT_ID`
+- `SPOTIFY_CLIENT_SECRET`
+- `SPOTIFY_REDIRECT_URI`
+
+Recommended for OAuth hardening:
+- `SPOTIFY_OAUTH_STATE_SECRET`
+
+CORS:
+- `FRONTEND_URL` (single origin)
+- `FRONTEND_URLS` (comma-separated multi-origin support)
+
+Database:
+- `SPRING_DATASOURCE_URL`
+- `SPRING_DATASOURCE_USERNAME`
+- `SPRING_DATASOURCE_PASSWORD`
+
+### Frontend
+
+See `frontend/.env.example`.
+
+- `VITE_API_BASE_URL` (recommended in non-local environments)
+
+## Quality Gates
+
+Frontend:
 ```bash
-SPOTIFY_CLIENT_ID=
-SPOTIFY_CLIENT_SECRET=
-SPOTIFY_REDIRECT_URI=http://127.0.0.1:5173/callback
-FRONTEND_URL=http://127.0.0.1:5173
+npm --prefix frontend run lint
+npm --prefix frontend run test
+npm --prefix frontend run build
 ```
 
-### Frontend (`frontend/.env`)
-
+Backend:
 ```bash
-VITE_API_BASE_URL=http://localhost:8080
+./mvnw -f backend/pom.xml test
+./mvnw -f backend/pom.xml package -DskipTests
 ```
 
-## Known Gaps
-- Security hardening is intentionally staged; early commits prioritize functional rebuild milestones.
-- Test coverage starts focused on critical auth/data flows and expands incrementally per roadmap.
-- Local Spotify token handling will be refined in later hardening phases.
+## v1.0.0 Release Checklist
 
-## Development Workflow
-- Branch naming: `feat-<branch-name>`
-- Commit convention: `[impl]`, `[test]`, `[design]`, `[debug]`
-- Use short-lived feature branches and open PRs in small, reviewable slices
-- Keep architecture notes and decisions under `docs/`
+- Frontend lint/tests/build all pass
+- Backend tests/package pass
+- OAuth login/callback verified end-to-end
+- Dashboard and player smoke-tested
+- Local-file fallback behavior verified
+- Docs in `README.md` and `docs/` reviewed and consistent
