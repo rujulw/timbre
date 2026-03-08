@@ -12,7 +12,7 @@ Current model:
 
 ## Current Delivery Stage (As Of 2026-03-07)
 - Active branch track: `feat-player-experience`.
-- Commit position: **Commit 16** (`[impl] add live currently playing endpoint with token refresh fallback`).
+- Commit position: **Commit 19** (`[impl] add navbar profile/session controls and protected layout shell`).
 - Execution pattern from this point:
 - Use `old-backend/` and `old-frontend/` as behavior references.
 - Re-implement in `backend/` and `frontend/` with clean boundaries.
@@ -43,6 +43,7 @@ Current frontend state model:
 - Dashboard supports time-range switching (`short_term`, `medium_term`, `long_term`) for top tracks/artists.
 - Dashboard uses loading skeleton states while range data is being fetched.
 - Protected layout wraps authenticated routes and applies consistent top navigation shell.
+- Navbar includes session controls (profile menu + Spotify profile deep link + logout action).
 - Route guards enforce authenticated access to dashboard/player/stats/settings paths.
 - App-level live playback poller now runs against `/api/auth/currently-playing` every 5 seconds.
 - Poller updates `activeTrack`, `currentlyPlaying`, and deduped `liveHistory` in app state.

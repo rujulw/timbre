@@ -5,7 +5,7 @@ import VinylDisplay from '../components/VinylDisplay.jsx';
 
 const Player = () => {
   const { appState } = useAppState();
-  const [accentColor, setAccentColor] = useState('#22c55e');
+  const [accentColor, setAccentColor] = useState(() => window.localStorage.getItem('player_accent_color'));
 
   const liveHistory = Array.isArray(appState?.liveHistory) ? appState.liveHistory : [];
   const activeTrack = appState?.activeTrack ?? null;
@@ -14,6 +14,7 @@ const Player = () => {
   const currentUrl = currentTrack?.externalUrls?.spotify ?? currentTrack?.external_urls?.spotify;
   const currentTrackArt = (activeTrack?.track?.album || activeTrack?.album)?.images?.[0]?.url;
   const isPlaying = activeTrack?.isPlaying === true;
+  const resolvedAccentColor = accentColor ?? 'rgba(255,255,255,0.72)';
   const [motionTick, setMotionTick] = useState(0);
 
   useEffect(() => {
@@ -95,7 +96,9 @@ const Player = () => {
 
   const handleColors = (colors) => {
     if (colors?.length > 0) {
-      setAccentColor(colors[0]);
+      const nextAccentColor = colors[0];
+      setAccentColor(nextAccentColor);
+      window.localStorage.setItem('player_accent_color', nextAccentColor);
     }
   };
 
@@ -134,13 +137,13 @@ const Player = () => {
               {isPlaying ? (
                 <div
                   className="absolute -right-2 -top-2 h-4 w-4 rounded-full animate-ping opacity-75"
-                  style={{ backgroundColor: accentColor }}
+                  style={{ backgroundColor: resolvedAccentColor }}
                 />
               ) : null}
             </div>
 
             <div className="min-w-0 flex-1">
-              <h2 className="mb-1 text-xl font-bold tracking-tighter lowercase" style={{ color: accentColor }}>
+              <h2 className="mb-1 text-xl font-bold tracking-tighter lowercase" style={{ color: resolvedAccentColor }}>
                 currently playing
               </h2>
               <h3 className="mb-1 truncate text-[clamp(1.25rem,2.2vw,1.5rem)] leading-none font-black tracking-tighter">
@@ -161,7 +164,7 @@ const Player = () => {
                     className="min-w-0.5 flex-1 rounded-full transition-[height,opacity] duration-150 ease-linear"
                     style={{
                       height: `${Math.round(level * 100)}%`,
-                      backgroundColor: accentColor,
+                      backgroundColor: resolvedAccentColor,
                       opacity: isPlaying ? 0.82 : 0.45,
                     }}
                   />
@@ -174,8 +177,8 @@ const Player = () => {
                 className="h-full transition-all duration-700"
                 style={{
                   width: isPlaying ? '100%' : '38%',
-                  backgroundColor: accentColor,
-                  boxShadow: `0 0 10px ${accentColor}`,
+                  backgroundColor: resolvedAccentColor,
+                  boxShadow: `0 0 10px ${resolvedAccentColor}`,
                   opacity: isPlaying ? 1 : 0.45,
                 }}
               />

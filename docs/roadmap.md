@@ -5,7 +5,7 @@ Build timbre in a clean, showcaseable, industry-standard GitHub Flow, using the 
 
 ## Current Position (As Of 2026-03-07)
 - Active stream: `feat-player-experience`.
-- Current commit target: **Commit 16** (`[impl] add live currently playing endpoint with token refresh fallback`).
+- Current commit target: **Commit 19** (`[impl] add navbar profile/session controls and protected layout shell`).
 - Delivery style from this point onward:
 - Read `old-backend/` and `old-frontend/` first for behavior parity.
 - Port to `backend/` and `frontend/` with commit-scoped changes.
@@ -40,7 +40,7 @@ Build timbre in a clean, showcaseable, industry-standard GitHub Flow, using the 
 - [x] Live currently playing endpoint + refresh fallback (Commit 16)
 - [x] Global polling and session history behavior (Commit 17)
 - [x] Player page and vinyl interaction design (Commit 18)
-- [ ] Navbar/session shell on protected routes
+- [x] Navbar/session shell on protected routes (Commit 19)
 - [ ] Frontend tests for player + routing behavior
 
 ## Milestone 5 — Snapshot + Release

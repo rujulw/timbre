@@ -86,3 +86,9 @@
 - Symptom: repeated `404` on `/api/auth/currently-playing` when API base was misconfigured or unavailable in runtime environment.
 - Fix: introduced shared API base resolver (`env -> localhost in dev -> same-origin in prod`) and reused it across callback/login/dashboard/poller paths. Poller now disables further currently-playing requests when endpoint returns `404`.
 - Verification: `cd frontend && npm run lint && npm run build` passed.
+
+## 2026-03-07 - Commit 19 protected shell extraction and navbar session menu hardening
+- Area: Frontend protected routing shell + session controls (`App.jsx`, `components/ProtectedRoute.jsx`, `components/ProtectedLayout.jsx`, `components/Navbar.jsx`)
+- Risk: inline route guards/layout wrappers and broad `localStorage.clear()` logout can cause brittle app-shell composition and unintended client-state deletion.
+- Fix: extracted reusable `ProtectedRoute` and `ProtectedLayout` components, moved protected screens to the shared shell, added navbar session dropdown (profile deep-link + logout), and replaced `localStorage.clear()` with scoped auth/session key cleanup.
+- Verification: `cd frontend && npm run lint && npm run build` passed.

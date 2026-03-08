@@ -6,29 +6,10 @@ import Dashboard from './pages/Dashboard.jsx';
 import Player from './pages/Player.jsx';
 import { AppStateProvider } from './state/AppStateProvider.jsx';
 import { useAppState } from './state/appState.js';
-import Navbar from './components/Navbar.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import ProtectedLayout from './components/ProtectedLayout.jsx';
 import UnderConstruction from './components/UnderConstruction.jsx';
 import { getApiBaseUrl } from './lib/apiBaseUrl.js';
-
-function ProtectedRoute({ children }) {
-  const { appState } = useAppState();
-  const legacyToken = window.localStorage.getItem('spotify_access_token');
-
-  if (!appState?.accessToken && !legacyToken) {
-    return <Navigate to="/" replace />;
-  }
-
-  return children;
-}
-
-function ProtectedLayout({ children }) {
-  return (
-    <div className="min-h-screen bg-black text-white">
-      <Navbar />
-      <div className="pt-[4.5rem]">{children}</div>
-    </div>
-  );
-}
 
 function GlobalPlaybackPoller() {
   const { appState, updateAuthTokens, updateAppState } = useAppState();

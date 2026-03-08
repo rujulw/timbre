@@ -48,8 +48,9 @@ const Callback = () => {
                 localStorage.setItem('profile_url', data.profileUrl);
                 console.log("Saved Profile Link:", data.profileUrl);
             }
-            if (data.displayName) {
-                localStorage.setItem('display_name', data.displayName);
+            const resolvedDisplayName = data.displayName ?? data?.user?.display_name ?? null;
+            if (resolvedDisplayName) {
+                localStorage.setItem('display_name', resolvedDisplayName);
             }
 
             const currentlyPlayingTrack = data?.currentlyPlaying?.item || data?.currentlyPlaying?.track || null;
