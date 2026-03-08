@@ -102,10 +102,14 @@
 - player page rendering from hydrated app-state inputs
 - Verification: `cd frontend && npm run lint && npm run build && npm run test` passed.
 
-## 2026-03-07 - Upcoming Local-File Compatibility Risk Track
-- Area: Local-files interoperability across backend contracts and dashboard/player rendering.
-- Risk: local tracks may not have Spotify IDs/artwork/complete metadata, causing null-path crashes or invalid deep-link actions.
-- Planned mitigation:
-- introduce local-files placeholder model with safe fallback fields
-- enforce null-safe contract handling in backend + frontend rendering
-- verify release UI pass against mixed Spotify/local data states before tagging `v1.0.0`.
+## 2026-03-07 - Commit 23 local-files placeholder + snapshot URI safety
+- Area: Frontend player/dashboard rendering and backend snapshot playlist URI handling.
+- Risk: local tracks can arrive without Spotify IDs, deep links, or artwork, causing redirect failures and invalid snapshot payloads.
+- Fix:
+- Added shared frontend track-compat normalization (`source` detection + fallback title/artist/artwork).
+- Updated global poller + player/dashboard rendering paths to use normalized tracks and safe identity fallback.
+- Blocked local-track Spotify deep links and filtered snapshot payloads to Spotify-track URIs only.
+- Hardened backend snapshot URI normalization to drop `spotify:local:*` and non-track Spotify URIs.
+- Verification:
+- `cd frontend && npm run lint && npm run test`
+- `cd backend && ./mvnw test`

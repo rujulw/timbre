@@ -210,8 +210,8 @@ public class SpotifyAuthService {
             }
 
             List<String> formattedUris = (trackUris == null ? List.<String>of() : trackUris).stream()
-                    .filter(uri -> uri != null)
-                    .map(uri -> uri.startsWith("spotify:track:") ? uri : "spotify:track:" + uri)
+                    .map(this::normalizeSpotifyTrackUri)
+                    .filter(uri -> uri != null && !uri.isBlank())
                     .collect(Collectors.toList());
 
             if (formattedUris.isEmpty()) {
@@ -232,5 +232,30 @@ public class SpotifyAuthService {
         } catch (Exception e) {
             return Map.of("success", false, "error", e.getMessage());
         }
+    }
+
+    private String normalizeSpotifyTrackUri(String rawValue) {
+        if (rawValue == null) {
+            return null;
+        }
+
+        String value = rawValue.trim();
+        if (value.isBlank()) {
+            return null;
+        }
+
+        if (value.startsWith("spotify:local:")) {
+            return null;
+        }
+
+        if (value.startsWith("spotify:track:")) {
+            return value;
+        }
+
+        if (value.startsWith("spotify:")) {
+            return null;
+        }
+
+        return "spotify:track:" + value;
     }
 }

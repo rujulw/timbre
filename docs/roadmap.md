@@ -4,8 +4,8 @@
 Build timbre in a clean, showcaseable, industry-standard GitHub Flow, using the existing project as reference while producing a cleaner v1 codebase.
 
 ## Current Position (As Of 2026-03-07)
-- Active stream: `feat/make-playlist`.
-- Current target: local-file compatibility safety layer and release hardening.
+- Active stream: `feat/local-files`.
+- Current target: final release hardening after local-file compatibility placeholder rollout.
 - Delivery style from this point onward:
 - Read `old-backend/` and `old-frontend/` first for behavior parity.
 - Port to `backend/` and `frontend/` with commit-scoped changes.
@@ -50,6 +50,6 @@ Build timbre in a clean, showcaseable, industry-standard GitHub Flow, using the 
 - [x] Integration tests for snapshot + range transitions
 
 ## Milestone 6 — Local File Compatibility + Release
-- [ ] Local-files compatibility placeholder and null-safe metadata handling
+- [x] Local-files compatibility placeholder and null-safe metadata handling
 - [ ] Final UI consistency checks and pre-release polish pass
 - [ ] Release `v1.0.0`

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ColorExtractor } from 'react-color-extractor';
+import { normalizeTrack } from '../lib/trackCompat.js';
 
 const PLACEHOLDER_TRACK = {
   name: 'nothing',
@@ -11,7 +12,7 @@ const PLACEHOLDER_TRACK = {
 };
 
 const VinylDisplay = ({ track, isPlaying }) => {
-  const trackData = track?.track || track || PLACEHOLDER_TRACK;
+  const trackData = normalizeTrack(track?.track || track || PLACEHOLDER_TRACK);
   const [dominantColor, setDominantColor] = useState('#282828');
   const imageUrl = trackData.album?.images?.[0]?.url;
 
